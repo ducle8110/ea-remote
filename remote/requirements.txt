@@ -1,0 +1,7 @@
+flask>=3.0
+flask-sqlalchemy>=3.1
+psycopg2-binary>=2.9
+gunicorn>=21.2
+requests>=2.31
+python-telegram-bot>=20.7
+discord.py>=2.3

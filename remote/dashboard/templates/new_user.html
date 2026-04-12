@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}New User - EA Remote Control{% endblock %}
+{% block content %}
+<div style="max-width:500px;">
+    <h2 style="font-size:20px;margin-bottom:16px;">Create New User</h2>
+    <div class="card">
+        <form id="createForm">
+            <div style="margin-bottom:12px;">
+                <label>Name *</label>
+                <input type="text" name="name" id="name" required style="width:100%;" placeholder="Client A">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label>Note</label>
+                <input type="text" name="note" id="note" style="width:100%;" placeholder="Optional notes">
+            </div>
+            <button type="submit" class="btn btn-primary">Create User</button>
+        </form>
+        <div id="result" style="margin-top:16px;display:none;">
+            <div style="color:var(--green);margin-bottom:8px;">User created!</div>
+            <label>API Key (copy and give to user):</label>
+            <code id="apiKey" style="background:var(--bg3);padding:8px 12px;border-radius:4px;display:block;user-select:all;word-break:break-all;margin-top:4px;"></code>
+            <a id="goDetail" href="#" class="btn btn-primary" style="margin-top:12px;">Go to User Detail &rarr;</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('name').value,
+        note: document.getElementById('note').value,
+    };
+    const res = await fetch('/api/admin/user', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+    const d = await res.json();
+    if (d.api_key) {
+        document.getElementById('apiKey').textContent = d.api_key;
+        document.getElementById('goDetail').href = '/user/' + d.id;
+        document.getElementById('result').style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

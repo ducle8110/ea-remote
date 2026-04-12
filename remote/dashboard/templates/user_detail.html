@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block title %}{{ user.name }} - EA Remote Control{% endblock %}
+{% block content %}
+<div style="margin-bottom:20px;">
+    <a href="/">&larr; Back to Dashboard</a>
+    <h2 style="font-size:20px;margin-top:8px;">{{ user.name }}
+        <span id="statusBadge" class="badge badge-offline">...</span>
+    </h2>
+</div>
+
+<!-- Live Status -->
+<div class="grid-3" id="statusCards" style="margin-bottom:20px;">
+    <div class="card">
+        <div class="stat-label">Balance</div>
+        <div class="stat-value" id="sBalance">-</div>
+    </div>
+    <div class="card">
+        <div class="stat-label">Equity</div>
+        <div class="stat-value" id="sEquity">-</div>
+    </div>
+    <div class="card">
+        <div class="stat-label">Profit</div>
+        <div class="stat-value" id="sProfit">-</div>
+    </div>
+    <div class="card">
+        <div class="stat-label">Drawdown</div>
+        <div class="stat-value" id="sDD">-</div>
+    </div>
+    <div class="card">
+        <div class="stat-label">Positions (BUY / SELL)</div>
+        <div class="stat-value" id="sPos">-</div>
+    </div>
+    <div class="card">
+        <div class="stat-label">Spread</div>
+        <div class="stat-value" id="sSpread">-</div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="card" style="margin-bottom:20px;">
+    <h2>Actions</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-danger" onclick="sendCmd('disable_trading')">Disable Trading</button>
+        <button class="btn btn-success" onclick="sendCmd('enable_trading')">Enable Trading</button>
+        <button class="btn btn-danger" onclick="if(confirm('Close ALL positions for this user?')) sendCmd('close_all')">Close All</button>
+    </div>
+    <div id="cmdResult" style="margin-top:8px;font-size:13px;color:var(--text2);"></div>
+</div>
+
+<!-- Tool Files -->
+<div class="card" style="margin-bottom:20px;">
+    <h2>Tool Files</h2>
+    <div id="toolInfo" style="margin-bottom:12px;">
+        {% if user.tool_filename %}
+        <div style="margin-bottom:8px;">
+            <span style="color:var(--accent);font-weight:600;">{{ user.tool_filename }}</span>
+            {% if user.tool_mq5 %}
+                <a href="/api/admin/user/{{ user.id }}/download/mq5" class="btn btn-primary" style="margin-left:8px;padding:4px 10px;font-size:12px;">Download .mq5</a>
+            {% endif %}
+            {% if user.tool_ex5 %}
+                <a href="/api/admin/user/{{ user.id }}/download/ex5" class="btn btn-primary" style="margin-left:4px;padding:4px 10px;font-size:12px;">Download .ex5</a>
+            {% endif %}
+        </div>
+        {% else %}
+        <div style="color:var(--text2);margin-bottom:8px;">No tool files uploaded yet</div>
+        {% endif %}
+    </div>
+    <form id="uploadForm" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+        <div>
+            <label>MQ5 file</label>
+            <input type="file" name="mq5" accept=".mq5" style="font-size:12px;">
+        </div>
+        <div>
+            <label>EX5 file</label>
+            <input type="file" name="ex5" accept=".ex5" style="font-size:12px;">
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+        <span id="uploadResult" style="font-size:13px;color:var(--text2);"></span>
+    </form>
+</div>
+
+<!-- Config Editor (grouped by section) -->
+<div class="card" style="margin-bottom:20px;">
+    <h2>Config <span style="font-size:12px;color:var(--text2);">(server desired vs EA reported)</span></h2>
+    <form id="configForm">
+
+        <!-- Trading -->
+        <div class="config-section">
+            <h3 class="section-title">Trading</h3>
+            <div class="grid-3">
+                <div>
+                    <label>Fixed Lot <span id="ea_fixed_lot" class="ea-val"></span></label>
+                    <input type="number" name="fixed_lot" id="cfg_fixed_lot" step="0.01" style="width:100%;">
+                </div>
+                <div>
+                    <label>Step Pip <span id="ea_step_pip" class="ea-val"></span></label>
+                    <input type="number" name="step_pip" id="cfg_step_pip" step="1" style="width:100%;">
+                </div>
+                <div>
+                    <label>Max Per Side <span id="ea_max_per_side" class="ea-val"></span></label>
+                    <input type="number" name="max_per_side" id="cfg_max_per_side" step="1" style="width:100%;">
+                </div>
+                <div>
+                    <label>Max Spread Pip <span id="ea_max_spread_pip" class="ea-val"></span></label>
+                    <input type="number" name="max_spread_pip" id="cfg_max_spread_pip" step="1" style="width:100%;">
+                </div>
+                <div>
+                    <label>EMA Fast <span id="ea_ema_fast" class="ea-val"></span></label>
+                    <input type="number" name="ema_fast" id="cfg_ema_fast" step="1" style="width:100%;">
+                </div>
+                <div>
+                    <label>EMA Slow <span id="ea_ema_slow" class="ea-val"></span></label>
+                    <input type="number" name="ema_slow" id="cfg_ema_slow" step="1" style="width:100%;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Take Profit -->
+        <div class="config-section">
+            <h3 class="section-title">Take Profit</h3>
+            <div class="grid-3">
+                <div>
+                    <label>Cluster TP ($) <span id="ea_cluster_tp_usd" class="ea-val"></span></label>
+                    <input type="number" name="cluster_tp_usd" id="cfg_cluster_tp_usd" step="0.01" style="width:100%;">
+                </div>
+                <div>
+                    <label>Partial TP Mode <span id="ea_partial_tp_mode" class="ea-val"></span></label>
+                    <select name="partial_tp_mode" id="cfg_partial_tp_mode" style="width:100%;">
+                        <option value="0">0 - CloseFar</option>
+                        <option value="1">1 - Combo 2+1</option>
+                        <option value="2">2 - Dual</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Partial TP ($) <span id="ea_partial_tp_usd" class="ea-val"></span></label>
+                    <input type="number" name="partial_tp_usd" id="cfg_partial_tp_usd" step="0.01" style="width:100%;">
+                </div>
+                <div>
+                    <label>Partial Same Dir <span id="ea_partial_tp_same_dir" class="ea-val"></span></label>
+                    <input type="number" name="partial_tp_same_dir" id="cfg_partial_tp_same_dir" step="1" style="width:100%;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekend -->
+        <div class="config-section">
+            <h3 class="section-title">Weekend Hedge</h3>
+            <div class="grid-3">
+                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                    <input type="checkbox" name="enable_weekend_hedge" id="cfg_enable_weekend_hedge">
+                    <label for="cfg_enable_weekend_hedge" style="margin:0;">Enable Weekend Hedge
+                        <span id="ea_enable_weekend_hedge" class="ea-val"></span>
+                    </label>
+                </div>
+                <div>
+                    <label>Hours Before Close <span id="ea_hours_before_close" class="ea-val"></span></label>
+                    <input type="number" name="hours_before_close" id="cfg_hours_before_close" step="1" style="width:100%;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Safety -->
+        <div class="config-section">
+            <h3 class="section-title">Safety</h3>
+            <div class="grid-3">
+                <div>
+                    <label>Max DD % <span id="ea_max_drawdown_percent" class="ea-val"></span></label>
+                    <input type="number" name="max_drawdown_percent" id="cfg_max_drawdown_percent" step="0.1" style="width:100%;">
+                </div>
+                <div>
+                    <label>Enforce ON % <span id="ea_enforce_on_pct" class="ea-val"></span></label>
+                    <input type="number" name="enforce_on_pct" id="cfg_enforce_on_pct" step="1" style="width:100%;">
+                </div>
+                <div>
+                    <label>Enforce OFF % <span id="ea_enforce_off_pct" class="ea-val"></span></label>
+                    <input type="number" name="enforce_off_pct" id="cfg_enforce_off_pct" step="1" style="width:100%;">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                    <input type="checkbox" name="enforce_step_buy" id="cfg_enforce_step_buy">
+                    <label for="cfg_enforce_step_buy" style="margin:0;">Enforce Step BUY
+                        <span id="ea_enforce_step_buy" class="ea-val"></span>
+                    </label>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                    <input type="checkbox" name="enforce_step_sell" id="cfg_enforce_step_sell">
+                    <label for="cfg_enforce_step_sell" style="margin:0;">Enforce Step SELL
+                        <span id="ea_enforce_step_sell" class="ea-val"></span>
+                    </label>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                    <input type="checkbox" name="auto_enforce_step" id="cfg_auto_enforce_step">
+                    <label for="cfg_auto_enforce_step" style="margin:0;">Auto Enforce Step
+                        <span id="ea_auto_enforce_step" class="ea-val"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remote -->
+        <div class="config-section">
+            <h3 class="section-title">Remote Control</h3>
+            <div class="grid-3">
+                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                    <input type="checkbox" name="trading_enabled" id="cfg_trading_enabled">
+                    <label for="cfg_trading_enabled" style="margin:0;">Trading Enabled
+                        <span id="ea_trading_enabled" class="ea-val"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:16px;">
+            <button type="submit" class="btn btn-primary">Save Config</button>
+            <span id="saveResult" style="margin-left:12px;font-size:13px;color:var(--text2);"></span>
+        </div>
+    </form>
+</div>
+
+<!-- API Key -->
+<div class="card" style="margin-bottom:20px;">
+    <h2>API Key</h2>
+    <code style="background:var(--bg3);padding:8px 12px;border-radius:4px;display:block;user-select:all;">{{ user.api_key }}</code>
+</div>
+
+<!-- Event Log -->
+<div class="card">
+    <h2>Recent Events</h2>
+    <table>
+        <thead><tr><th>Time</th><th>Type</th><th>Detail</th></tr></thead>
+        <tbody>
+        {% for e in events %}
+        <tr>
+            <td style="white-space:nowrap;">{{ e.created_at.strftime('%m-%d %H:%M') if e.created_at else '-' }}</td>
+            <td>{{ e.event_type }}</td>
+            <td style="font-size:12px;">{{ e.detail }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.config-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.config-section:last-of-type { border-bottom:none; }
+.section-title { font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
+.ea-val { color:var(--text2); font-size:11px; }
+</style>
+<script>
+const userId = {{ user.id }};
+const boolParams = ['enable_weekend_hedge','enforce_step_buy','enforce_step_sell','auto_enforce_step','trading_enabled'];
+const numParams = ['fixed_lot','step_pip','max_per_side','max_spread_pip','ema_fast','ema_slow',
+    'cluster_tp_usd','partial_tp_usd','partial_tp_same_dir',
+    'hours_before_close','max_drawdown_percent','enforce_on_pct','enforce_off_pct'];
+const selectParams = ['partial_tp_mode'];
+
+async function loadUser() {
+    const res = await fetch(`/api/admin/user/${userId}`);
+    const d = await res.json();
+    const hb = d.heartbeat;
+
+    // Status badge
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'badge ' + (d.online ? 'badge-online' : 'badge-offline');
+    badge.textContent = d.online ? 'ONLINE' : 'OFFLINE';
+
+    // Stats
+    document.getElementById('sBalance').textContent = '$' + hb.balance.toFixed(2);
+    document.getElementById('sEquity').textContent = '$' + hb.equity.toFixed(2);
+    const profitEl = document.getElementById('sProfit');
+    profitEl.textContent = (hb.profit >= 0 ? '+' : '') + '$' + hb.profit.toFixed(2);
+    profitEl.className = 'stat-value ' + (hb.profit >= 0 ? 'profit-pos' : 'profit-neg');
+    const ddEl = document.getElementById('sDD');
+    ddEl.textContent = hb.dd_pct.toFixed(1) + '%';
+    ddEl.className = 'stat-value ' + (hb.dd_pct >= 40 ? 'profit-neg' : '');
+    document.getElementById('sPos').textContent = hb.buy_count + ' / ' + hb.sell_count;
+    document.getElementById('sSpread').textContent = hb.spread_pip.toFixed(1) + ' pip';
+
+    // Fill config form
+    const cfg = d.server_config;
+    const eaCfg = d.ea_config;
+
+    numParams.forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el && cfg[k] !== undefined) el.value = cfg[k];
+        const eaEl = document.getElementById('ea_' + k);
+        if (eaEl && eaCfg[k] !== undefined) eaEl.textContent = `(EA: ${eaCfg[k]})`;
+    });
+
+    selectParams.forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el && cfg[k] !== undefined) el.value = cfg[k];
+        const eaEl = document.getElementById('ea_' + k);
+        if (eaEl && eaCfg[k] !== undefined) {
+            const modeNames = {0: 'CloseFar', 1: 'Combo', 2: 'Dual'};
+            eaEl.textContent = `(EA: ${modeNames[eaCfg[k]] || eaCfg[k]})`;
+        }
+    });
+
+    boolParams.forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el) el.checked = !!cfg[k];
+        const eaEl = document.getElementById('ea_' + k);
+        if (eaEl && eaCfg[k] !== undefined) eaEl.textContent = `(EA: ${eaCfg[k]})`;
+    });
+}
+
+async function sendCmd(type) {
+    const res = await fetch(`/api/admin/user/${userId}/command`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({type})
+    });
+    const d = await res.json();
+    document.getElementById('cmdResult').textContent = d.status === 'ok'
+        ? `Command "${type}" sent (ID: ${d.command_id})`
+        : `Error: ${d.error}`;
+    setTimeout(loadUser, 1000);
+}
+
+document.getElementById('configForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {};
+    numParams.forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el) data[k] = parseFloat(el.value);
+    });
+    selectParams.forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el) data[k] = parseInt(el.value);
+    });
+    boolParams.forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el) data[k] = el.checked;
+    });
+
+    const res = await fetch(`/api/admin/user/${userId}/config`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+    const d = await res.json();
+    const changes = Object.keys(d.changed || {});
+    document.getElementById('saveResult').textContent = changes.length > 0
+        ? `Saved: ${changes.join(', ')}`
+        : 'No changes';
+});
+
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = new FormData(e.target);
+    const res = await fetch(`/api/admin/user/${userId}/upload`, {
+        method: 'POST',
+        body: form
+    });
+    const d = await res.json();
+    document.getElementById('uploadResult').textContent = d.status === 'ok'
+        ? `Uploaded: ${d.tool_filename}`
+        : `Error: ${d.error}`;
+    if (d.status === 'ok') setTimeout(() => location.reload(), 1000);
+});
+
+loadUser();
+setInterval(loadUser, 5000);
+</script>
+{% endblock %}

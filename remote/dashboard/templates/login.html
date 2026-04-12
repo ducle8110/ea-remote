@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Login - EA Remote Control{% endblock %}
+{% block content %}
+<div style="max-width:360px;margin:80px auto;">
+    <div class="card">
+        <h2>Login</h2>
+        <form method="POST">
+            <div style="margin-bottom:12px;">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required style="width:100%;">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required style="width:100%;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
