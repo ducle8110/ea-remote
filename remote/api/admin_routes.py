@@ -60,13 +60,6 @@ def get_user(user_id):
         delta = (now - hb.last_seen.replace(tzinfo=timezone.utc)).total_seconds()
         online = delta < 60
 
-    ea_config = {}
-    if hb and hb.current_config:
-        try:
-            ea_config = json.loads(hb.current_config)
-        except json.JSONDecodeError:
-            pass
-
     return jsonify({
         'id': u.id,
         'name': u.name,
@@ -95,8 +88,10 @@ def get_user(user_id):
             'server_time': hb.server_time if hb else '',
             'last_seen': hb.last_seen.isoformat() if hb and hb.last_seen else None,
         },
+        'param_schema': config.get_schema() if config else [],
         'server_config': config.to_dict() if config else {},
-        'ea_config': ea_config,
+        'ea_config': config.get_ea_reported() if config else {},
+        'param_groups': config.get_groups() if config else {},
     })
 
 
@@ -112,16 +107,17 @@ def update_config(user_id):
         config = Config(user_id=u.id)
         db.session.add(config)
 
+    old_desired = config.get_desired()
     changed = {}
-    for key in Config.PARAM_NAMES:
-        if key in data:
-            old_val = getattr(config, key)
-            new_val = data[key]
-            if old_val != new_val:
-                setattr(config, key, new_val)
-                changed[key] = {'old': old_val, 'new': new_val}
+    for key, new_val in data.items():
+        old_val = old_desired.get(key)
+        if old_val != new_val:
+            changed[key] = {'old': old_val, 'new': new_val}
 
     if changed:
+        merged = dict(old_desired)
+        merged.update(data)
+        config.set_desired(merged)
         # Create command for EA to pick up
         cmd = Command(
             user_id=u.id,
@@ -244,11 +240,34 @@ def upload_tool_files(user_id):
     if not mq5 and not ex5:
         return jsonify({'error': 'No files uploaded'}), 400
 
+    parsed_count = 0
     if mq5:
-        u.tool_mq5 = mq5.read()
+        mq5_bytes = mq5.read()
+        u.tool_mq5 = mq5_bytes
         fname = mq5.filename or ''
         if fname.endswith('.mq5'):
             u.tool_filename = fname[:-4]
+
+        # Parse MQ5 inputs and seed config schema + defaults
+        from remote.mq5_parser import parse_mq5_inputs
+        mq5_content = mq5_bytes.decode('utf-8', errors='ignore')
+        params = parse_mq5_inputs(mq5_content)
+        parsed_count = len(params)
+
+        config = u.config
+        if not config:
+            config = Config(user_id=u.id)
+            db.session.add(config)
+
+        config.set_schema(params)
+
+        # Seed desired_config with defaults (keep existing overrides)
+        current_desired = config.get_desired()
+        for p in params:
+            if p['name'] not in current_desired:
+                current_desired[p['name']] = p['default']
+        config.set_desired(current_desired)
+
     if ex5:
         u.tool_ex5 = ex5.read()
         if not u.tool_filename and ex5.filename:
@@ -259,10 +278,10 @@ def upload_tool_files(user_id):
     db.session.add(EventLog(
         user_id=u.id,
         event_type='tool_uploaded',
-        detail=f'Files: mq5={"yes" if mq5 else "no"} ex5={"yes" if ex5 else "no"} name={u.tool_filename}',
+        detail=f'Files: mq5={"yes" if mq5 else "no"} ex5={"yes" if ex5 else "no"} name={u.tool_filename} params={parsed_count}',
     ))
     db.session.commit()
-    return jsonify({'status': 'ok', 'tool_filename': u.tool_filename})
+    return jsonify({'status': 'ok', 'tool_filename': u.tool_filename, 'params_parsed': parsed_count})
 
 
 @admin_bp.route('/api/admin/user/<int:user_id>/download/<file_type>')
@@ -286,6 +305,22 @@ def download_tool_file(user_id, file_type):
             as_attachment=True,
         )
     return jsonify({'error': 'File not found'}), 404
+
+
+@admin_bp.route('/api/admin/user/<int:user_id>/groups', methods=['PUT'])
+@require_admin
+def update_groups(user_id):
+    """Update param grouping for a user."""
+    u = User.query.get_or_404(user_id)
+    data = request.get_json(silent=True) or {}
+
+    config = u.config
+    if not config:
+        return jsonify({'error': 'No config found. Upload MQ5 first.'}), 400
+
+    config.set_groups(data)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
 
 
 @admin_bp.route('/api/admin/logs')

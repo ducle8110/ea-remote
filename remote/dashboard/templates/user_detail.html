@@ -79,141 +79,39 @@
     </form>
 </div>
 
-<!-- Config Editor (grouped by section) -->
+<!-- Dynamic Config Editor -->
 <div class="card" style="margin-bottom:20px;">
-    <h2>Config <span style="font-size:12px;color:var(--text2);">(server desired vs EA reported)</span></h2>
-    <form id="configForm">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>Config <span style="font-size:12px;color:var(--text2);">(server desired vs EA reported)</span></h2>
+        <button class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="toggleGroupEdit()">Edit Groups</button>
+    </div>
 
-        <!-- Trading -->
-        <div class="config-section">
-            <h3 class="section-title">Trading</h3>
-            <div class="grid-3">
-                <div>
-                    <label>Fixed Lot <span id="ea_fixed_lot" class="ea-val"></span></label>
-                    <input type="number" name="fixed_lot" id="cfg_fixed_lot" step="0.01" style="width:100%;">
-                </div>
-                <div>
-                    <label>Step Pip <span id="ea_step_pip" class="ea-val"></span></label>
-                    <input type="number" name="step_pip" id="cfg_step_pip" step="1" style="width:100%;">
-                </div>
-                <div>
-                    <label>Max Per Side <span id="ea_max_per_side" class="ea-val"></span></label>
-                    <input type="number" name="max_per_side" id="cfg_max_per_side" step="1" style="width:100%;">
-                </div>
-                <div>
-                    <label>Max Spread Pip <span id="ea_max_spread_pip" class="ea-val"></span></label>
-                    <input type="number" name="max_spread_pip" id="cfg_max_spread_pip" step="1" style="width:100%;">
-                </div>
-                <div>
-                    <label>EMA Fast <span id="ea_ema_fast" class="ea-val"></span></label>
-                    <input type="number" name="ema_fast" id="cfg_ema_fast" step="1" style="width:100%;">
-                </div>
-                <div>
-                    <label>EMA Slow <span id="ea_ema_slow" class="ea-val"></span></label>
-                    <input type="number" name="ema_slow" id="cfg_ema_slow" step="1" style="width:100%;">
-                </div>
-            </div>
-        </div>
+    <div id="noSchema" style="display:none;color:var(--text2);padding:20px 0;">
+        Upload MQ5 file to see configurable parameters.
+    </div>
 
-        <!-- Take Profit -->
-        <div class="config-section">
-            <h3 class="section-title">Take Profit</h3>
-            <div class="grid-3">
-                <div>
-                    <label>Cluster TP ($) <span id="ea_cluster_tp_usd" class="ea-val"></span></label>
-                    <input type="number" name="cluster_tp_usd" id="cfg_cluster_tp_usd" step="0.01" style="width:100%;">
-                </div>
-                <div>
-                    <label>Partial TP Mode <span id="ea_partial_tp_mode" class="ea-val"></span></label>
-                    <select name="partial_tp_mode" id="cfg_partial_tp_mode" style="width:100%;">
-                        <option value="0">0 - CloseFar</option>
-                        <option value="1">1 - Combo 2+1</option>
-                        <option value="2">2 - Dual</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Partial TP ($) <span id="ea_partial_tp_usd" class="ea-val"></span></label>
-                    <input type="number" name="partial_tp_usd" id="cfg_partial_tp_usd" step="0.01" style="width:100%;">
-                </div>
-                <div>
-                    <label>Partial Same Dir <span id="ea_partial_tp_same_dir" class="ea-val"></span></label>
-                    <input type="number" name="partial_tp_same_dir" id="cfg_partial_tp_same_dir" step="1" style="width:100%;">
-                </div>
-            </div>
-        </div>
-
-        <!-- Weekend -->
-        <div class="config-section">
-            <h3 class="section-title">Weekend Hedge</h3>
-            <div class="grid-3">
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="enable_weekend_hedge" id="cfg_enable_weekend_hedge">
-                    <label for="cfg_enable_weekend_hedge" style="margin:0;">Enable Weekend Hedge
-                        <span id="ea_enable_weekend_hedge" class="ea-val"></span>
-                    </label>
-                </div>
-                <div>
-                    <label>Hours Before Close <span id="ea_hours_before_close" class="ea-val"></span></label>
-                    <input type="number" name="hours_before_close" id="cfg_hours_before_close" step="1" style="width:100%;">
-                </div>
-            </div>
-        </div>
-
-        <!-- Safety -->
-        <div class="config-section">
-            <h3 class="section-title">Safety</h3>
-            <div class="grid-3">
-                <div>
-                    <label>Max DD % <span id="ea_max_drawdown_percent" class="ea-val"></span></label>
-                    <input type="number" name="max_drawdown_percent" id="cfg_max_drawdown_percent" step="0.1" style="width:100%;">
-                </div>
-                <div>
-                    <label>Enforce ON % <span id="ea_enforce_on_pct" class="ea-val"></span></label>
-                    <input type="number" name="enforce_on_pct" id="cfg_enforce_on_pct" step="1" style="width:100%;">
-                </div>
-                <div>
-                    <label>Enforce OFF % <span id="ea_enforce_off_pct" class="ea-val"></span></label>
-                    <input type="number" name="enforce_off_pct" id="cfg_enforce_off_pct" step="1" style="width:100%;">
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="enforce_step_buy" id="cfg_enforce_step_buy">
-                    <label for="cfg_enforce_step_buy" style="margin:0;">Enforce Step BUY
-                        <span id="ea_enforce_step_buy" class="ea-val"></span>
-                    </label>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="enforce_step_sell" id="cfg_enforce_step_sell">
-                    <label for="cfg_enforce_step_sell" style="margin:0;">Enforce Step SELL
-                        <span id="ea_enforce_step_sell" class="ea-val"></span>
-                    </label>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="auto_enforce_step" id="cfg_auto_enforce_step">
-                    <label for="cfg_auto_enforce_step" style="margin:0;">Auto Enforce Step
-                        <span id="ea_auto_enforce_step" class="ea-val"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Remote -->
-        <div class="config-section">
-            <h3 class="section-title">Remote Control</h3>
-            <div class="grid-3">
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="trading_enabled" id="cfg_trading_enabled">
-                    <label for="cfg_trading_enabled" style="margin:0;">Trading Enabled
-                        <span id="ea_trading_enabled" class="ea-val"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
+    <form id="configForm" style="display:none;">
+        <div id="configFields"></div>
         <div style="margin-top:16px;">
             <button type="submit" class="btn btn-primary">Save Config</button>
             <span id="saveResult" style="margin-left:12px;font-size:13px;color:var(--text2);"></span>
         </div>
     </form>
+
+    <!-- Group Edit Panel -->
+    <div id="groupEditPanel" style="display:none;margin-top:16px;padding:16px;background:var(--bg2);border-radius:8px;">
+        <h3 style="font-size:14px;margin-bottom:12px;">Manage Groups</h3>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input type="text" id="newGroupName" placeholder="New group name..." style="flex:1;">
+            <button class="btn btn-primary" style="padding:4px 12px;" onclick="addGroup()">Add Group</button>
+        </div>
+        <div id="groupAssignments"></div>
+        <div style="margin-top:12px;">
+            <button class="btn btn-primary" onclick="saveGroups()">Save Groups</button>
+            <button class="btn" style="margin-left:8px;" onclick="toggleGroupEdit()">Cancel</button>
+            <span id="groupSaveResult" style="margin-left:12px;font-size:13px;color:var(--text2);"></span>
+        </div>
+    </div>
 </div>
 
 <!-- API Key -->
@@ -244,16 +142,136 @@
 <style>
 .config-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border); }
 .config-section:last-of-type { border-bottom:none; }
-.section-title { font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
+.section-title { font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; cursor:pointer; }
+.section-title:hover { opacity:0.8; }
 .ea-val { color:var(--text2); font-size:11px; }
+.ea-val.diff { color:#e74c3c; font-weight:600; }
+.param-comment { font-size:11px; color:var(--text2); margin-top:2px; }
+.group-assign-row { display:flex; align-items:center; gap:8px; padding:4px 0; }
+.group-assign-row label { flex:1; font-size:13px; }
+.group-assign-row select { width:160px; font-size:12px; }
 </style>
 <script>
 const userId = {{ user.id }};
-const boolParams = ['enable_weekend_hedge','enforce_step_buy','enforce_step_sell','auto_enforce_step','trading_enabled'];
-const numParams = ['fixed_lot','step_pip','max_per_side','max_spread_pip','ema_fast','ema_slow',
-    'cluster_tp_usd','partial_tp_usd','partial_tp_same_dir',
-    'hours_before_close','max_drawdown_percent','enforce_on_pct','enforce_off_pct'];
-const selectParams = ['partial_tp_mode'];
+let paramSchema = [];
+let paramGroups = {};
+let serverConfig = {};
+let eaConfig = {};
+
+function formatLabel(key) {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderConfigForm() {
+    const container = document.getElementById('configFields');
+    container.innerHTML = '';
+
+    if (!paramSchema.length) {
+        document.getElementById('noSchema').style.display = 'block';
+        document.getElementById('configForm').style.display = 'none';
+        return;
+    }
+    document.getElementById('noSchema').style.display = 'none';
+    document.getElementById('configForm').style.display = 'block';
+
+    // Build reverse map: paramName -> groupName
+    const paramToGroup = {};
+    for (const [gName, params] of Object.entries(paramGroups)) {
+        for (const p of params) paramToGroup[p] = gName;
+    }
+
+    // Group params
+    const grouped = {};
+    for (const p of paramSchema) {
+        const group = paramToGroup[p.name] || 'Ungrouped';
+        if (!grouped[group]) grouped[group] = [];
+        grouped[group].push(p);
+    }
+
+    // Always add trading_enabled at end
+    const tradingEnabledSchema = {name: 'trading_enabled', type: 'bool', default: true, comment: 'Kill switch'};
+
+    // Sort groups: named groups first, Ungrouped last
+    const groupNames = Object.keys(grouped).sort((a, b) => {
+        if (a === 'Ungrouped') return 1;
+        if (b === 'Ungrouped') return -1;
+        return a.localeCompare(b);
+    });
+
+    for (const gName of groupNames) {
+        const section = document.createElement('div');
+        section.className = 'config-section';
+        section.innerHTML = `<h3 class="section-title" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">${gName}</h3>`;
+
+        const grid = document.createElement('div');
+        grid.className = 'grid-3';
+
+        for (const p of grouped[gName]) {
+            grid.appendChild(renderParam(p));
+        }
+        section.appendChild(grid);
+        container.appendChild(section);
+    }
+
+    // Remote Control section (trading_enabled - always present)
+    const rcSection = document.createElement('div');
+    rcSection.className = 'config-section';
+    rcSection.innerHTML = '<h3 class="section-title">Remote Control</h3>';
+    const rcGrid = document.createElement('div');
+    rcGrid.className = 'grid-3';
+    rcGrid.appendChild(renderParam(tradingEnabledSchema));
+    rcSection.appendChild(rcGrid);
+    container.appendChild(rcSection);
+}
+
+function renderParam(p) {
+    const div = document.createElement('div');
+    const val = serverConfig[p.name] !== undefined ? serverConfig[p.name] : p.default;
+    const eaVal = eaConfig[p.name];
+    const isDiff = eaVal !== undefined && eaVal !== val;
+    const eaDisplay = eaVal !== undefined ? `(EA: ${eaVal})` : '';
+    const diffClass = isDiff ? ' diff' : '';
+
+    if (p.type === 'bool') {
+        div.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                <input type="checkbox" name="${p.name}" id="cfg_${p.name}" ${val ? 'checked' : ''}>
+                <label for="cfg_${p.name}" style="margin:0;">${formatLabel(p.name)}
+                    <span class="ea-val${diffClass}">${eaDisplay}</span>
+                </label>
+            </div>
+            ${p.comment ? `<div class="param-comment">${p.comment}</div>` : ''}`;
+    } else if (p.type === 'enum') {
+        div.innerHTML = `
+            <div>
+                <label>${formatLabel(p.name)} <span class="ea-val${diffClass}">${eaDisplay}</span></label>
+                <input type="text" name="${p.name}" id="cfg_${p.name}" value="${val || ''}" style="width:100%;">
+                ${p.comment ? `<div class="param-comment">${p.comment}</div>` : ''}
+            </div>`;
+    } else if (p.type === 'double') {
+        div.innerHTML = `
+            <div>
+                <label>${formatLabel(p.name)} <span class="ea-val${diffClass}">${eaDisplay}</span></label>
+                <input type="number" name="${p.name}" id="cfg_${p.name}" step="0.01" value="${val ?? ''}" style="width:100%;">
+                ${p.comment ? `<div class="param-comment">${p.comment}</div>` : ''}
+            </div>`;
+    } else if (p.type === 'int') {
+        div.innerHTML = `
+            <div>
+                <label>${formatLabel(p.name)} <span class="ea-val${diffClass}">${eaDisplay}</span></label>
+                <input type="number" name="${p.name}" id="cfg_${p.name}" step="1" value="${val ?? ''}" style="width:100%;">
+                ${p.comment ? `<div class="param-comment">${p.comment}</div>` : ''}
+            </div>`;
+    } else {
+        div.innerHTML = `
+            <div>
+                <label>${formatLabel(p.name)} <span class="ea-val${diffClass}">${eaDisplay}</span></label>
+                <input type="text" name="${p.name}" id="cfg_${p.name}" value="${val || ''}" style="width:100%;">
+                ${p.comment ? `<div class="param-comment">${p.comment}</div>` : ''}
+            </div>`;
+    }
+    return div;
+}
 
 async function loadUser() {
     const res = await fetch(`/api/admin/user/${userId}`);
@@ -277,33 +295,12 @@ async function loadUser() {
     document.getElementById('sPos').textContent = hb.buy_count + ' / ' + hb.sell_count;
     document.getElementById('sSpread').textContent = hb.spread_pip.toFixed(1) + ' pip';
 
-    // Fill config form
-    const cfg = d.server_config;
-    const eaCfg = d.ea_config;
-
-    numParams.forEach(k => {
-        const el = document.getElementById('cfg_' + k);
-        if (el && cfg[k] !== undefined) el.value = cfg[k];
-        const eaEl = document.getElementById('ea_' + k);
-        if (eaEl && eaCfg[k] !== undefined) eaEl.textContent = `(EA: ${eaCfg[k]})`;
-    });
-
-    selectParams.forEach(k => {
-        const el = document.getElementById('cfg_' + k);
-        if (el && cfg[k] !== undefined) el.value = cfg[k];
-        const eaEl = document.getElementById('ea_' + k);
-        if (eaEl && eaCfg[k] !== undefined) {
-            const modeNames = {0: 'CloseFar', 1: 'Combo', 2: 'Dual'};
-            eaEl.textContent = `(EA: ${modeNames[eaCfg[k]] || eaCfg[k]})`;
-        }
-    });
-
-    boolParams.forEach(k => {
-        const el = document.getElementById('cfg_' + k);
-        if (el) el.checked = !!cfg[k];
-        const eaEl = document.getElementById('ea_' + k);
-        if (eaEl && eaCfg[k] !== undefined) eaEl.textContent = `(EA: ${eaCfg[k]})`;
-    });
+    // Store data and render config
+    paramSchema = d.param_schema || [];
+    serverConfig = d.server_config || {};
+    eaConfig = d.ea_config || {};
+    paramGroups = d.param_groups || {};
+    renderConfigForm();
 }
 
 async function sendCmd(type) {
@@ -322,17 +319,11 @@ async function sendCmd(type) {
 document.getElementById('configForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {};
-    numParams.forEach(k => {
-        const el = document.getElementById('cfg_' + k);
-        if (el) data[k] = parseFloat(el.value);
-    });
-    selectParams.forEach(k => {
-        const el = document.getElementById('cfg_' + k);
-        if (el) data[k] = parseInt(el.value);
-    });
-    boolParams.forEach(k => {
-        const el = document.getElementById('cfg_' + k);
-        if (el) data[k] = el.checked;
+    const inputs = document.querySelectorAll('#configFields input, #configFields select');
+    inputs.forEach(el => {
+        if (el.type === 'checkbox') data[el.name] = el.checked;
+        else if (el.type === 'number') data[el.name] = parseFloat(el.value);
+        else data[el.name] = el.value;
     });
 
     const res = await fetch(`/api/admin/user/${userId}/config`, {
@@ -356,10 +347,76 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     });
     const d = await res.json();
     document.getElementById('uploadResult').textContent = d.status === 'ok'
-        ? `Uploaded: ${d.tool_filename}`
+        ? `Uploaded: ${d.tool_filename} (${d.params_parsed} params parsed)`
         : `Error: ${d.error}`;
     if (d.status === 'ok') setTimeout(() => location.reload(), 1000);
 });
+
+// Group management
+let groupEditVisible = false;
+function toggleGroupEdit() {
+    groupEditVisible = !groupEditVisible;
+    document.getElementById('groupEditPanel').style.display = groupEditVisible ? 'block' : 'none';
+    if (groupEditVisible) renderGroupEditor();
+}
+
+function renderGroupEditor() {
+    const container = document.getElementById('groupAssignments');
+    const allGroups = Object.keys(paramGroups).filter(g => g !== 'Ungrouped');
+
+    // Build param -> group map
+    const paramToGroup = {};
+    for (const [gName, params] of Object.entries(paramGroups)) {
+        for (const p of params) paramToGroup[p] = gName;
+    }
+
+    let html = '';
+    for (const p of paramSchema) {
+        const currentGroup = paramToGroup[p.name] || '';
+        html += `<div class="group-assign-row">
+            <label>${p.name} <span style="color:var(--text2);font-size:11px;">(${p.type})</span></label>
+            <select data-param="${p.name}">
+                <option value="" ${!currentGroup ? 'selected' : ''}>Ungrouped</option>
+                ${allGroups.map(g => `<option value="${g}" ${currentGroup === g ? 'selected' : ''}>${g}</option>`).join('')}
+            </select>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
+function addGroup() {
+    const input = document.getElementById('newGroupName');
+    const name = input.value.trim();
+    if (!name) return;
+    if (!paramGroups[name]) paramGroups[name] = [];
+    input.value = '';
+    renderGroupEditor();
+}
+
+async function saveGroups() {
+    // Collect assignments from selects
+    const newGroups = {};
+    document.querySelectorAll('#groupAssignments select').forEach(sel => {
+        const param = sel.dataset.param;
+        const group = sel.value;
+        if (group) {
+            if (!newGroups[group]) newGroups[group] = [];
+            newGroups[group].push(param);
+        }
+    });
+
+    const res = await fetch(`/api/admin/user/${userId}/groups`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(newGroups)
+    });
+    const d = await res.json();
+    document.getElementById('groupSaveResult').textContent = d.status === 'ok' ? 'Saved!' : `Error: ${d.error}`;
+    if (d.status === 'ok') {
+        paramGroups = newGroups;
+        renderConfigForm();
+    }
+}
 
 loadUser();
 setInterval(loadUser, 5000);
