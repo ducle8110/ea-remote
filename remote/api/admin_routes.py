@@ -311,10 +311,11 @@ def download_tool_file(user_id, file_type):
 @admin_bp.route('/api/admin/logs')
 @require_admin
 def get_logs():
-    """Get event logs with optional filters."""
+    """Get event logs with optional filters and pagination."""
     user_id = request.args.get('user_id', type=int)
     event_type = request.args.get('event_type', '')
-    limit = request.args.get('limit', 100, type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
 
     query = EventLog.query
     if user_id:
@@ -322,12 +323,21 @@ def get_logs():
     if event_type:
         query = query.filter_by(event_type=event_type)
 
-    logs = query.order_by(EventLog.created_at.desc()).limit(limit).all()
-    return jsonify([{
-        'id': l.id,
-        'user_id': l.user_id,
-        'user_name': l.user.name if l.user else None,
-        'event_type': l.event_type,
-        'detail': l.detail,
-        'created_at': l.created_at.isoformat() if l.created_at else None,
-    } for l in logs])
+    total = query.count()
+    logs = query.order_by(EventLog.created_at.desc())\
+        .offset((page - 1) * per_page).limit(per_page).all()
+
+    return jsonify({
+        'logs': [{
+            'id': l.id,
+            'user_id': l.user_id,
+            'user_name': l.user.name if l.user else None,
+            'event_type': l.event_type,
+            'detail': l.detail,
+            'created_at': l.created_at.isoformat() if l.created_at else None,
+        } for l in logs],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page,
+    })

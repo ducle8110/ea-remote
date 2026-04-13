@@ -38,9 +38,7 @@ def index():
 def user_detail(user_id):
     """Single user config + status page."""
     user = User.query.get_or_404(user_id)
-    events = EventLog.query.filter_by(user_id=user_id)\
-        .order_by(EventLog.created_at.desc()).limit(20).all()
-    return render_template('user_detail.html', user=user, events=events)
+    return render_template('user_detail.html', user=user)
 
 
 @dashboard_bp.route('/user/new')
