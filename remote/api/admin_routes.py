@@ -54,6 +54,21 @@ def get_user(user_id):
     hb = u.heartbeat
     config = u.config
 
+    # Auto-create config if missing (e.g. after migration)
+    if not config:
+        config = Config(user_id=u.id)
+        # Seed from EA reported config if available
+        if hb and hb.current_config:
+            try:
+                ea_vals = json.loads(hb.current_config)
+                for key in Config.PARAM_NAMES:
+                    if key in ea_vals:
+                        setattr(config, key, ea_vals[key])
+            except json.JSONDecodeError:
+                pass
+        db.session.add(config)
+        db.session.commit()
+
     now = datetime.now(timezone.utc)
     online = False
     if hb and hb.last_seen:
