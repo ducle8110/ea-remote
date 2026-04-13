@@ -153,13 +153,18 @@ def send_command(user_id):
     if cmd_type not in ('disable_trading', 'enable_trading', 'close_all'):
         return jsonify({'error': 'Invalid command type'}), 400
 
-    # For disable/enable, also update config
-    if cmd_type == 'disable_trading':
+    # For disable/enable, update config and cancel opposite pending commands
+    opposite = {'disable_trading': 'enable_trading', 'enable_trading': 'disable_trading'}
+    if cmd_type in opposite:
         if u.config:
-            u.config.trading_enabled = False
-    elif cmd_type == 'enable_trading':
-        if u.config:
-            u.config.trading_enabled = True
+            u.config.trading_enabled = (cmd_type == 'enable_trading')
+        # Ack any pending opposite commands to avoid conflict
+        now = datetime.now(timezone.utc)
+        for old_cmd in Command.query.filter_by(
+            user_id=u.id, cmd_type=opposite[cmd_type], acknowledged=False
+        ).all():
+            old_cmd.acknowledged = True
+            old_cmd.ack_at = now
 
     cmd = Command(
         user_id=u.id,
