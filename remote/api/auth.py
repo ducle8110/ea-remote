@@ -8,7 +8,11 @@ def require_api_key(f):
     """Decorator: authenticate EA requests by X-API-Key header."""
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Check header first, then JSON body (MQL5 WebRequest sends in body)
         api_key = request.headers.get('X-API-Key', '')
+        if not api_key:
+            data = request.get_json(silent=True) or {}
+            api_key = data.get('api_key', '')
         if not api_key:
             return jsonify({'error': 'Missing API key'}), 401
 
