@@ -236,6 +236,17 @@ def create_user():
     }), 201
 
 
+@admin_bp.route('/api/admin/user/<int:user_id>/note', methods=['PUT'])
+@require_admin
+def update_note(user_id):
+    """Update user note."""
+    u = User.query.get_or_404(user_id)
+    data = request.get_json(silent=True) or {}
+    u.note = data.get('note', '')
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+
 @admin_bp.route('/api/admin/user/<int:user_id>', methods=['DELETE'])
 @require_admin
 def deactivate_user(user_id):

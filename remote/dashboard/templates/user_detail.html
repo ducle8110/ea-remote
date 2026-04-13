@@ -213,6 +213,16 @@
     </form>
 </div>
 
+<!-- Note -->
+<div class="card" style="margin-bottom:20px;">
+    <h2>Note</h2>
+    <div style="display:flex;gap:10px;align-items:start;">
+        <textarea id="userNote" rows="3" style="width:100%;font-size:13px;">{{ user.note or '' }}</textarea>
+        <button class="btn btn-primary" style="white-space:nowrap;" onclick="saveNote()">Save</button>
+    </div>
+    <span id="noteResult" style="font-size:12px;color:var(--text2);"></span>
+</div>
+
 <!-- API Key -->
 <div class="card" style="margin-bottom:20px;">
     <h2>API Key</h2>
@@ -467,6 +477,18 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         : `Error: ${d.error}`;
     if (d.status === 'ok') setTimeout(() => location.reload(), 1000);
 });
+
+async function saveNote() {
+    const note = document.getElementById('userNote').value;
+    const res = await fetch(`/api/admin/user/${userId}/note`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({note})
+    });
+    const d = await res.json();
+    document.getElementById('noteResult').textContent = d.status === 'ok' ? 'Saved' : 'Error';
+    setTimeout(() => document.getElementById('noteResult').textContent = '', 2000);
+}
 
 let evtPage = 1;
 let evtTotalPages = 1;
