@@ -147,8 +147,12 @@ def start_discord_bot(app: Flask):
         if not bot.user or bot.user not in message.mentions:
             return
 
+        app.logger.info(f"[Claude AI] Mentioned by {message.author}: {message.content[:100]}")
+
         # Skip if no API key configured
         if not app.config.get('ANTHROPIC_API_KEY', ''):
+            app.logger.warning("[Claude AI] ANTHROPIC_API_KEY not set, skipping")
+            await message.reply("Claude AI chua duoc cau hinh (thieu ANTHROPIC_API_KEY).")
             return
 
         # Strip bot mention from message content
@@ -158,17 +162,21 @@ def start_discord_bot(app: Flask):
         if not content:
             return
 
-        async with message.channel.typing():
-            reply = await asyncio.to_thread(
-                process_message, app, content, str(message.channel.id)
-            )
+        try:
+            async with message.channel.typing():
+                reply = await asyncio.to_thread(
+                    process_message, app, content, str(message.channel.id)
+                )
 
-        # Send response, chunked if > 2000 chars
-        for i in range(0, len(reply), 2000):
-            if i == 0:
-                await message.reply(reply[i:i + 2000])
-            else:
-                await message.channel.send(reply[i:i + 2000])
+            # Send response, chunked if > 2000 chars
+            for i in range(0, len(reply), 2000):
+                if i == 0:
+                    await message.reply(reply[i:i + 2000])
+                else:
+                    await message.channel.send(reply[i:i + 2000])
+        except Exception as e:
+            app.logger.exception(f"[Claude AI] Error: {e}")
+            await message.reply(f"Loi: {e}")
 
     def run_bot():
         import asyncio
