@@ -90,34 +90,35 @@
 
 <!-- Config Editor (grouped by section) -->
 <div class="card" style="margin-bottom:20px;">
-    <h2>Config <span style="font-size:12px;color:var(--text2);">(Server desired | EA actual)</span></h2>
+    <h2>Config</h2>
+    <div id="configSummary" style="font-size:13px;margin-bottom:12px;"></div>
     <form id="configForm">
 
         <!-- Trading -->
         <div class="config-section">
             <h3 class="section-title">Trading</h3>
             <div class="grid-3">
-                <div>
+                <div class="config-field">
                     <label>Fixed Lot <span id="ea_fixed_lot" class="ea-val"></span></label>
                     <input type="number" name="fixed_lot" id="cfg_fixed_lot" step="0.01" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Step Pip <span id="ea_step_pip" class="ea-val"></span></label>
                     <input type="number" name="step_pip" id="cfg_step_pip" step="1" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Max Per Side <span id="ea_max_per_side" class="ea-val"></span></label>
                     <input type="number" name="max_per_side" id="cfg_max_per_side" step="1" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Max Spread Pip <span id="ea_max_spread_pip" class="ea-val"></span></label>
                     <input type="number" name="max_spread_pip" id="cfg_max_spread_pip" step="1" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>EMA Fast <span id="ea_ema_fast" class="ea-val"></span></label>
                     <input type="number" name="ema_fast" id="cfg_ema_fast" step="1" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>EMA Slow <span id="ea_ema_slow" class="ea-val"></span></label>
                     <input type="number" name="ema_slow" id="cfg_ema_slow" step="1" style="width:100%;">
                 </div>
@@ -128,11 +129,11 @@
         <div class="config-section">
             <h3 class="section-title">Take Profit</h3>
             <div class="grid-3">
-                <div>
+                <div class="config-field">
                     <label>Cluster TP ($) <span id="ea_cluster_tp_usd" class="ea-val"></span></label>
                     <input type="number" name="cluster_tp_usd" id="cfg_cluster_tp_usd" step="0.01" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Partial TP Mode <span id="ea_partial_tp_mode" class="ea-val"></span></label>
                     <select name="partial_tp_mode" id="cfg_partial_tp_mode" style="width:100%;">
                         <option value="0">0 - CloseFar</option>
@@ -140,11 +141,11 @@
                         <option value="2">2 - Dual</option>
                     </select>
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Partial TP ($) <span id="ea_partial_tp_usd" class="ea-val"></span></label>
                     <input type="number" name="partial_tp_usd" id="cfg_partial_tp_usd" step="0.01" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Partial Same Dir <span id="ea_partial_tp_same_dir" class="ea-val"></span></label>
                     <input type="number" name="partial_tp_same_dir" id="cfg_partial_tp_same_dir" step="1" style="width:100%;">
                 </div>
@@ -155,13 +156,13 @@
         <div class="config-section">
             <h3 class="section-title">Weekend Hedge</h3>
             <div class="grid-3">
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
                     <input type="checkbox" name="enable_weekend_hedge" id="cfg_enable_weekend_hedge">
                     <label for="cfg_enable_weekend_hedge" style="margin:0;">Enable Weekend Hedge
                         <span id="ea_enable_weekend_hedge" class="ea-val"></span>
                     </label>
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Hours Before Close <span id="ea_hours_before_close" class="ea-val"></span></label>
                     <input type="number" name="hours_before_close" id="cfg_hours_before_close" step="1" style="width:100%;">
                 </div>
@@ -172,31 +173,31 @@
         <div class="config-section">
             <h3 class="section-title">Safety</h3>
             <div class="grid-3">
-                <div>
+                <div class="config-field">
                     <label>Max DD % <span id="ea_max_drawdown_percent" class="ea-val"></span></label>
                     <input type="number" name="max_drawdown_percent" id="cfg_max_drawdown_percent" step="0.1" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Enforce ON % <span id="ea_enforce_on_pct" class="ea-val"></span></label>
                     <input type="number" name="enforce_on_pct" id="cfg_enforce_on_pct" step="1" style="width:100%;">
                 </div>
-                <div>
+                <div class="config-field">
                     <label>Enforce OFF % <span id="ea_enforce_off_pct" class="ea-val"></span></label>
                     <input type="number" name="enforce_off_pct" id="cfg_enforce_off_pct" step="1" style="width:100%;">
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
                     <input type="checkbox" name="enforce_step_buy" id="cfg_enforce_step_buy">
                     <label for="cfg_enforce_step_buy" style="margin:0;">Enforce Step BUY
                         <span id="ea_enforce_step_buy" class="ea-val"></span>
                     </label>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
                     <input type="checkbox" name="enforce_step_sell" id="cfg_enforce_step_sell">
                     <label for="cfg_enforce_step_sell" style="margin:0;">Enforce Step SELL
                         <span id="ea_enforce_step_sell" class="ea-val"></span>
                     </label>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
                     <input type="checkbox" name="auto_enforce_step" id="cfg_auto_enforce_step">
                     <label for="cfg_auto_enforce_step" style="margin:0;">Auto Enforce Step
                         <span id="ea_auto_enforce_step" class="ea-val"></span>
@@ -243,6 +244,18 @@
 .section-title { font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
 .ea-val { color:var(--text2); font-size:11px; }
 .ea-val.diff { color:#e74c3c; font-weight:600; }
+.config-field { padding:4px 8px; border-radius:4px; border-left:3px solid transparent; }
+.config-field.pending {
+    background:#fff3cd; border-left-color:#ffc107;
+}
+.pending-badge {
+    display:inline-block; background:#ffc107; color:#856404;
+    font-size:10px; padding:1px 6px; border-radius:3px; margin-left:4px; font-weight:600;
+}
+.synced-badge {
+    display:inline-block; background:#28a745; color:white;
+    font-size:10px; padding:1px 6px; border-radius:3px; margin-left:4px;
+}
 
 /* Trading Status Banner */
 .trading-banner {
@@ -335,58 +348,72 @@ async function loadUser() {
     // Fill config form
     const cfg = d.server_config;
     const eaCfg = d.ea_config;
+    let pendingCount = 0;
 
     // Trading banner: server desired vs EA actual
     updateTradingBanner(eaCfg.trading_enabled, d.online);
+
+    function markField(el, eaEl, isDiff, eaText) {
+        const field = el ? el.closest('.config-field') : null;
+        if (field) {
+            if (isDiff) {
+                field.classList.add('pending');
+                pendingCount++;
+            } else {
+                field.classList.remove('pending');
+            }
+        }
+        if (eaEl) {
+            if (isDiff) {
+                eaEl.innerHTML = `(EA: ${eaText}) <span class="pending-badge">PENDING</span>`;
+                eaEl.className = 'ea-val diff';
+            } else if (eaText !== null) {
+                eaEl.innerHTML = `<span class="synced-badge">\u2713</span>`;
+                eaEl.className = 'ea-val';
+            } else {
+                eaEl.innerHTML = '(EA: -)';
+                eaEl.className = 'ea-val';
+            }
+        }
+    }
 
     numParams.forEach(k => {
         const el = document.getElementById('cfg_' + k);
         if (el && cfg[k] !== undefined) el.value = cfg[k];
         const eaEl = document.getElementById('ea_' + k);
-        if (eaEl) {
-            if (eaCfg[k] !== undefined) {
-                const isDiff = cfg[k] !== undefined && Number(cfg[k]) !== Number(eaCfg[k]);
-                eaEl.textContent = `(EA: ${eaCfg[k]})`;
-                eaEl.className = 'ea-val' + (isDiff ? ' diff' : '');
-            } else {
-                eaEl.textContent = '(EA: -)';
-                eaEl.className = 'ea-val';
-            }
-        }
+        const hasEa = eaCfg[k] !== undefined;
+        const isDiff = hasEa && cfg[k] !== undefined && Number(cfg[k]) !== Number(eaCfg[k]);
+        markField(el, eaEl, isDiff, hasEa ? eaCfg[k] : null);
     });
 
     selectParams.forEach(k => {
         const el = document.getElementById('cfg_' + k);
         if (el && cfg[k] !== undefined) el.value = cfg[k];
         const eaEl = document.getElementById('ea_' + k);
-        if (eaEl) {
-            if (eaCfg[k] !== undefined) {
-                const modeNames = {0: 'CloseFar', 1: 'Combo', 2: 'Dual'};
-                const isDiff = cfg[k] !== undefined && Number(cfg[k]) !== Number(eaCfg[k]);
-                eaEl.textContent = `(EA: ${modeNames[eaCfg[k]] || eaCfg[k]})`;
-                eaEl.className = 'ea-val' + (isDiff ? ' diff' : '');
-            } else {
-                eaEl.textContent = '(EA: -)';
-                eaEl.className = 'ea-val';
-            }
-        }
+        const modeNames = {0: 'CloseFar', 1: 'Combo', 2: 'Dual'};
+        const hasEa = eaCfg[k] !== undefined;
+        const isDiff = hasEa && cfg[k] !== undefined && Number(cfg[k]) !== Number(eaCfg[k]);
+        markField(el, eaEl, isDiff, hasEa ? (modeNames[eaCfg[k]] || eaCfg[k]) : null);
     });
 
     boolParams.forEach(k => {
         const el = document.getElementById('cfg_' + k);
         if (el) el.checked = !!cfg[k];
         const eaEl = document.getElementById('ea_' + k);
-        if (eaEl) {
-            if (eaCfg[k] !== undefined) {
-                const isDiff = cfg[k] !== undefined && Boolean(cfg[k]) !== Boolean(eaCfg[k]);
-                eaEl.textContent = `(EA: ${eaCfg[k]})`;
-                eaEl.className = 'ea-val' + (isDiff ? ' diff' : '');
-            } else {
-                eaEl.textContent = '(EA: -)';
-                eaEl.className = 'ea-val';
-            }
-        }
+        const hasEa = eaCfg[k] !== undefined;
+        const isDiff = hasEa && cfg[k] !== undefined && Boolean(cfg[k]) !== Boolean(eaCfg[k]);
+        markField(el, eaEl, isDiff, hasEa ? (eaCfg[k] ? 'ON' : 'OFF') : null);
     });
+
+    // Summary
+    const summary = document.getElementById('configSummary');
+    if (pendingCount > 0) {
+        summary.innerHTML = `<span style="color:#856404;background:#fff3cd;padding:4px 10px;border-radius:4px;font-weight:600;">${pendingCount} param(s) PENDING sync</span>`;
+    } else if (Object.keys(eaCfg).length > 0) {
+        summary.innerHTML = `<span style="color:#155724;background:#d4edda;padding:4px 10px;border-radius:4px;">All synced \u2713</span>`;
+    } else {
+        summary.innerHTML = `<span style="color:var(--text2);">EA ch\u01B0a report config</span>`;
+    }
 }
 
 async function sendCmd(type) {
