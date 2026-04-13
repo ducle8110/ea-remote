@@ -19,6 +19,11 @@ class Config:
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     TELEGRAM_ADMIN_CHAT_ID = os.environ.get('TELEGRAM_ADMIN_CHAT_ID', '')
 
+    # Claude AI
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+    CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+    CLAUDE_MAX_HISTORY = int(os.environ.get('CLAUDE_MAX_HISTORY', '20'))
+
     # Alert thresholds
     OFFLINE_TIMEOUT_SEC = 60       # seconds without heartbeat = offline
     DD_ALERT_LEVELS = [30, 40, 50] # drawdown % thresholds

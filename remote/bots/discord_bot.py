@@ -1,9 +1,11 @@
-"""Discord bot with command handling + webhook notifications."""
+"""Discord bot with command handling + Claude AI chat."""
+import asyncio
 import threading
 import discord
 from discord.ext import commands as dc_commands
 from flask import Flask
 from remote.bots.notifications import notify_discord
+from remote.bots.claude_handler import process_message, clear_history
 
 _bot_thread = None
 
@@ -121,6 +123,52 @@ def start_discord_bot(app: Flask):
                 return
             lines = [f"**{u.name}** (v{u.ea_version or '?'})" for u in users]
             await ctx.send("**Users:**\n" + "\n".join(lines))
+
+    @bot.command(name='clear')
+    async def cmd_clear(ctx):
+        """Clear Claude AI conversation history. Usage: !clear"""
+        clear_history(str(ctx.channel.id))
+        await ctx.send("Da xoa lich su hoi thoai AI.")
+
+    @bot.event
+    async def on_message(message):
+        # Ignore own messages
+        if message.author == bot.user:
+            return
+
+        # Process ! commands first
+        await bot.process_commands(message)
+
+        # Don't trigger AI for ! commands
+        if message.content.startswith('!'):
+            return
+
+        # Only respond when @mentioned
+        if not bot.user or bot.user not in message.mentions:
+            return
+
+        # Skip if no API key configured
+        if not app.config.get('ANTHROPIC_API_KEY', ''):
+            return
+
+        # Strip bot mention from message content
+        content = message.content
+        if bot.user:
+            content = content.replace(f'<@{bot.user.id}>', '').strip()
+        if not content:
+            return
+
+        async with message.channel.typing():
+            reply = await asyncio.to_thread(
+                process_message, app, content, str(message.channel.id)
+            )
+
+        # Send response, chunked if > 2000 chars
+        for i in range(0, len(reply), 2000):
+            if i == 0:
+                await message.reply(reply[i:i + 2000])
+            else:
+                await message.channel.send(reply[i:i + 2000])
 
     def run_bot():
         import asyncio

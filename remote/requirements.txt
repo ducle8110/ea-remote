@@ -5,3 +5,4 @@ gunicorn>=21.2
 requests>=2.31
 python-telegram-bot>=20.7
 discord.py>=2.3
+anthropic>=0.39
