@@ -8,6 +8,15 @@
     </h2>
 </div>
 
+<!-- Trading Status Banner -->
+<div id="tradingBanner" class="trading-banner trading-unknown" style="margin-bottom:20px;">
+    <div id="tradingIcon" class="trading-icon">?</div>
+    <div>
+        <div id="tradingStatus" class="trading-label">Loading...</div>
+        <div id="tradingDetail" class="trading-detail"></div>
+    </div>
+</div>
+
 <!-- Live Status -->
 <div class="grid-3" id="statusCards" style="margin-bottom:20px;">
     <div class="card">
@@ -40,8 +49,8 @@
 <div class="card" style="margin-bottom:20px;">
     <h2>Actions</h2>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-danger" onclick="sendCmd('disable_trading')">Disable Trading</button>
-        <button class="btn btn-success" onclick="sendCmd('enable_trading')">Enable Trading</button>
+        <button id="btnDisable" class="btn btn-danger" onclick="sendCmd('disable_trading')">Disable Trading</button>
+        <button id="btnEnable" class="btn btn-success" onclick="sendCmd('enable_trading')">Enable Trading</button>
         <button class="btn btn-danger" onclick="if(confirm('Close ALL positions for this user?')) sendCmd('close_all')">Close All</button>
     </div>
     <div id="cmdResult" style="margin-top:8px;font-size:13px;color:var(--text2);"></div>
@@ -81,7 +90,7 @@
 
 <!-- Config Editor (grouped by section) -->
 <div class="card" style="margin-bottom:20px;">
-    <h2>Config <span style="font-size:12px;color:var(--text2);">(server desired vs EA reported)</span></h2>
+    <h2>Config <span style="font-size:12px;color:var(--text2);">(Server desired | EA actual)</span></h2>
     <form id="configForm">
 
         <!-- Trading -->
@@ -196,19 +205,6 @@
             </div>
         </div>
 
-        <!-- Remote -->
-        <div class="config-section">
-            <h3 class="section-title">Remote Control</h3>
-            <div class="grid-3">
-                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="trading_enabled" id="cfg_trading_enabled">
-                    <label for="cfg_trading_enabled" style="margin:0;">Trading Enabled
-                        <span id="ea_trading_enabled" class="ea-val"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
         <div style="margin-top:16px;">
             <button type="submit" class="btn btn-primary">Save Config</button>
             <span id="saveResult" style="margin-left:12px;font-size:13px;color:var(--text2);"></span>
@@ -246,6 +242,31 @@
 .config-section:last-of-type { border-bottom:none; }
 .section-title { font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
 .ea-val { color:var(--text2); font-size:11px; }
+.ea-val.diff { color:#e74c3c; font-weight:600; }
+
+/* Trading Status Banner */
+.trading-banner {
+    display:flex; align-items:center; gap:16px;
+    padding:16px 20px; border-radius:8px; font-weight:600;
+}
+.trading-icon { font-size:28px; line-height:1; }
+.trading-label { font-size:18px; }
+.trading-detail { font-size:12px; font-weight:400; margin-top:2px; }
+.trading-enabled {
+    background:linear-gradient(135deg, #d4edda, #c3e6cb);
+    border:2px solid #28a745; color:#155724;
+}
+.trading-disabled {
+    background:linear-gradient(135deg, #f8d7da, #f5c6cb);
+    border:2px solid #dc3545; color:#721c24;
+}
+.trading-unknown {
+    background:var(--bg2); border:2px solid var(--border); color:var(--text2);
+}
+.trading-mismatch {
+    background:linear-gradient(135deg, #fff3cd, #ffeeba);
+    border:2px solid #ffc107; color:#856404;
+}
 </style>
 <script>
 const userId = {{ user.id }};
@@ -254,6 +275,48 @@ const numParams = ['fixed_lot','step_pip','max_per_side','max_spread_pip','ema_f
     'cluster_tp_usd','partial_tp_usd','partial_tp_same_dir',
     'hours_before_close','max_drawdown_percent','enforce_on_pct','enforce_off_pct'];
 const selectParams = ['partial_tp_mode'];
+
+function updateTradingBanner(serverEnabled, eaEnabled, online) {
+    const banner = document.getElementById('tradingBanner');
+    const icon = document.getElementById('tradingIcon');
+    const label = document.getElementById('tradingStatus');
+    const detail = document.getElementById('tradingDetail');
+
+    if (!online) {
+        banner.className = 'trading-banner trading-unknown';
+        icon.textContent = '?';
+        label.textContent = 'EA OFFLINE';
+        detail.textContent = 'EA is not connected to server';
+    } else if (!serverEnabled && eaEnabled === false) {
+        // Both agree: disabled
+        banner.className = 'trading-banner trading-disabled';
+        icon.textContent = '\u26D4';
+        label.textContent = 'TRADING DISABLED';
+        detail.textContent = 'EA has confirmed: trading is stopped';
+    } else if (!serverEnabled && eaEnabled !== false) {
+        // Server wants disabled, EA hasn't confirmed yet
+        banner.className = 'trading-banner trading-mismatch';
+        icon.textContent = '\u23F3';
+        label.textContent = 'DISABLING...';
+        detail.textContent = 'Waiting for EA to confirm disable command';
+    } else if (serverEnabled && eaEnabled === false) {
+        // Server wants enabled, EA still disabled
+        banner.className = 'trading-banner trading-mismatch';
+        icon.textContent = '\u23F3';
+        label.textContent = 'ENABLING...';
+        detail.textContent = 'Waiting for EA to confirm enable command';
+    } else {
+        // Both agree: enabled
+        banner.className = 'trading-banner trading-enabled';
+        icon.textContent = '\u2705';
+        label.textContent = 'TRADING ACTIVE';
+        detail.textContent = 'EA is running and accepting new trades';
+    }
+
+    // Update action buttons
+    document.getElementById('btnDisable').style.display = serverEnabled ? '' : 'none';
+    document.getElementById('btnEnable').style.display = serverEnabled ? 'none' : '';
+}
 
 async function loadUser() {
     const res = await fetch(`/api/admin/user/${userId}`);
@@ -281,20 +344,39 @@ async function loadUser() {
     const cfg = d.server_config;
     const eaCfg = d.ea_config;
 
+    // Trading banner: server desired vs EA actual
+    updateTradingBanner(cfg.trading_enabled, eaCfg.trading_enabled, d.online);
+
     numParams.forEach(k => {
         const el = document.getElementById('cfg_' + k);
         if (el && cfg[k] !== undefined) el.value = cfg[k];
         const eaEl = document.getElementById('ea_' + k);
-        if (eaEl && eaCfg[k] !== undefined) eaEl.textContent = `(EA: ${eaCfg[k]})`;
+        if (eaEl) {
+            if (eaCfg[k] !== undefined) {
+                const isDiff = cfg[k] !== undefined && Number(cfg[k]) !== Number(eaCfg[k]);
+                eaEl.textContent = `(EA: ${eaCfg[k]})`;
+                eaEl.className = 'ea-val' + (isDiff ? ' diff' : '');
+            } else {
+                eaEl.textContent = '(EA: -)';
+                eaEl.className = 'ea-val';
+            }
+        }
     });
 
     selectParams.forEach(k => {
         const el = document.getElementById('cfg_' + k);
         if (el && cfg[k] !== undefined) el.value = cfg[k];
         const eaEl = document.getElementById('ea_' + k);
-        if (eaEl && eaCfg[k] !== undefined) {
-            const modeNames = {0: 'CloseFar', 1: 'Combo', 2: 'Dual'};
-            eaEl.textContent = `(EA: ${modeNames[eaCfg[k]] || eaCfg[k]})`;
+        if (eaEl) {
+            if (eaCfg[k] !== undefined) {
+                const modeNames = {0: 'CloseFar', 1: 'Combo', 2: 'Dual'};
+                const isDiff = cfg[k] !== undefined && Number(cfg[k]) !== Number(eaCfg[k]);
+                eaEl.textContent = `(EA: ${modeNames[eaCfg[k]] || eaCfg[k]})`;
+                eaEl.className = 'ea-val' + (isDiff ? ' diff' : '');
+            } else {
+                eaEl.textContent = '(EA: -)';
+                eaEl.className = 'ea-val';
+            }
         }
     });
 
@@ -302,7 +384,16 @@ async function loadUser() {
         const el = document.getElementById('cfg_' + k);
         if (el) el.checked = !!cfg[k];
         const eaEl = document.getElementById('ea_' + k);
-        if (eaEl && eaCfg[k] !== undefined) eaEl.textContent = `(EA: ${eaCfg[k]})`;
+        if (eaEl) {
+            if (eaCfg[k] !== undefined) {
+                const isDiff = cfg[k] !== undefined && Boolean(cfg[k]) !== Boolean(eaCfg[k]);
+                eaEl.textContent = `(EA: ${eaCfg[k]})`;
+                eaEl.className = 'ea-val' + (isDiff ? ' diff' : '');
+            } else {
+                eaEl.textContent = '(EA: -)';
+                eaEl.className = 'ea-val';
+            }
+        }
     });
 }
 
