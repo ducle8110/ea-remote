@@ -4,6 +4,19 @@ from remote.config import Config as AppConfig
 from remote.models import db
 
 
+def _migrate_if_needed(app):
+    """Drop configs table if schema doesn't match current model."""
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    if 'configs' in inspector.get_table_names():
+        columns = {c['name'] for c in inspector.get_columns('configs')}
+        # Current model expects 'fixed_lot' column; if missing, schema is wrong
+        if 'fixed_lot' not in columns:
+            app.logger.info("Configs table schema mismatch, recreating...")
+            db.session.execute(text('DROP TABLE configs'))
+            db.session.commit()
+
+
 def create_app():
     app = Flask(__name__,
                 template_folder='dashboard/templates',
@@ -26,8 +39,9 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(dashboard_bp)
 
-    # Create tables
+    # Create/migrate tables
     with app.app_context():
+        _migrate_if_needed(app)
         db.create_all()
 
     # Start background services (only in main process, not reloader)

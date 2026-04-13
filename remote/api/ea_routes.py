@@ -72,12 +72,8 @@ def heartbeat(user):
                 cmd_data['params'] = {}
         commands.append(cmd_data)
 
-    # Update EA reported config on Config model
+    # Include desired config if it differs from EA's current
     config = Config.query.filter_by(user_id=user.id).first()
-    ea_current_config = data.get('current_config', {})
-    if config and ea_current_config:
-        config.set_ea_reported(ea_current_config)
-
     desired_config = config.to_dict() if config else {}
 
     db.session.commit()

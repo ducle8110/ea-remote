@@ -1,5 +1,4 @@
 """SQLAlchemy models for Remote Control."""
-import json
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 
@@ -40,72 +39,55 @@ class User(db.Model):
 
 
 class Config(db.Model):
-    """Dynamic config per user. Schema parsed from uploaded MQ5 file."""
+    """Desired config per user. EA pulls this via heartbeat response."""
     __tablename__ = 'configs'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
 
-    # Kill switch — always present regardless of EA type
+    # Trading
+    fixed_lot = db.Column(db.Float, default=0.01)
+    step_pip = db.Column(db.Float, default=150.0)
+    max_per_side = db.Column(db.Integer, default=50)
+    max_spread_pip = db.Column(db.Float, default=50.0)
+    ema_fast = db.Column(db.Integer, default=10)
+    ema_slow = db.Column(db.Integer, default=50)
+
+    # Take Profit
+    cluster_tp_usd = db.Column(db.Float, default=1.5)
+    partial_tp_mode = db.Column(db.Integer, default=0)
+    partial_tp_usd = db.Column(db.Float, default=1.0)
+    partial_tp_same_dir = db.Column(db.Integer, default=3)
+
+    # Weekend
+    enable_weekend_hedge = db.Column(db.Boolean, default=True)
+    hours_before_close = db.Column(db.Integer, default=2)
+
+    # Safety
+    max_drawdown_percent = db.Column(db.Float, default=50.0)
+    enforce_step_buy = db.Column(db.Boolean, default=True)
+    enforce_step_sell = db.Column(db.Boolean, default=True)
+    auto_enforce_step = db.Column(db.Boolean, default=True)
+    enforce_on_pct = db.Column(db.Integer, default=50)
+    enforce_off_pct = db.Column(db.Integer, default=25)
+
+    # Remote control
     trading_enabled = db.Column(db.Boolean, default=True)
-
-    # Param schema parsed from MQ5: [{"name","type","default","comment","enum_value"}, ...]
-    param_schema = db.Column(db.Text, default='[]')
-
-    # Desired config: what admin wants EA to run
-    desired_config = db.Column(db.Text, default='{}')
-
-    # EA reported config: what EA is actually running (from heartbeat)
-    ea_reported_config = db.Column(db.Text, default='{}')
-
-    # Admin custom param grouping: {"GroupName": ["Param1","Param2"], ...}
-    param_groups = db.Column(db.Text, default='{}')
 
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
-    def get_schema(self) -> list:
-        try:
-            return json.loads(self.param_schema or '[]')
-        except json.JSONDecodeError:
-            return []
+    # All configurable param names (for serialization)
+    PARAM_NAMES = [
+        'fixed_lot', 'step_pip', 'max_per_side', 'max_spread_pip',
+        'ema_fast', 'ema_slow', 'cluster_tp_usd', 'partial_tp_mode',
+        'partial_tp_usd', 'partial_tp_same_dir', 'enable_weekend_hedge',
+        'hours_before_close', 'max_drawdown_percent', 'enforce_step_buy',
+        'enforce_step_sell', 'auto_enforce_step', 'enforce_on_pct',
+        'enforce_off_pct', 'trading_enabled',
+    ]
 
-    def set_schema(self, params: list):
-        self.param_schema = json.dumps(params, ensure_ascii=False)
-
-    def get_desired(self) -> dict:
-        try:
-            cfg = json.loads(self.desired_config or '{}')
-        except json.JSONDecodeError:
-            cfg = {}
-        cfg['trading_enabled'] = self.trading_enabled
-        return cfg
-
-    def set_desired(self, data: dict):
-        data = dict(data)
-        if 'trading_enabled' in data:
-            self.trading_enabled = bool(data.pop('trading_enabled'))
-        self.desired_config = json.dumps(data, ensure_ascii=False)
-
-    def get_ea_reported(self) -> dict:
-        try:
-            return json.loads(self.ea_reported_config or '{}')
-        except json.JSONDecodeError:
-            return {}
-
-    def set_ea_reported(self, data: dict):
-        self.ea_reported_config = json.dumps(data, ensure_ascii=False)
-
-    def get_groups(self) -> dict:
-        try:
-            return json.loads(self.param_groups or '{}')
-        except json.JSONDecodeError:
-            return {}
-
-    def set_groups(self, groups: dict):
-        self.param_groups = json.dumps(groups, ensure_ascii=False)
-
-    def to_dict(self) -> dict:
-        return self.get_desired()
+    def to_dict(self):
+        return {name: getattr(self, name) for name in self.PARAM_NAMES}
 
 
 class Heartbeat(db.Model):
