@@ -1,7 +1,9 @@
-"""Telegram bot with command handling."""
+"""Telegram bot with command handling + Claude AI chat."""
+import asyncio
 import threading
 from flask import Flask
 from remote.bots.notifications import notify_telegram
+from remote.bots.claude_handler import process_message, clear_history
 
 # Telegram bot chạy trong background thread
 _bot_thread = None
@@ -84,16 +86,65 @@ def start_telegram_bot(app: Flask):
             db.session.commit()
             await update.message.reply_text(f"✅ Trading ENABLED for {name}")
 
+    async def cmd_clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Clear Claude AI conversation history."""
+        clear_history(str(update.effective_chat.id))
+        await update.message.reply_text("Da xoa lich su hoi thoai AI.")
+
+    async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle non-command text messages via Claude AI."""
+        if not update.message or not update.message.text:
+            return
+
+        # Skip if no API key
+        if not app.config.get('ANTHROPIC_API_KEY', ''):
+            return
+
+        chat_id = str(update.effective_chat.id)
+        user_text = update.message.text
+
+        # In group chats, only respond when bot is mentioned by name
+        if update.effective_chat.type in ('group', 'supergroup'):
+            bot_info = context.bot
+            bot_username = (await bot_info.get_me()).username or ''
+            if f'@{bot_username}' not in user_text:
+                return
+            user_text = user_text.replace(f'@{bot_username}', '').strip()
+
+        if not user_text:
+            return
+
+        app.logger.info(
+            f"[Claude AI TG] {update.effective_user.first_name} "
+            f"(chat {chat_id}): {user_text[:100]}"
+        )
+
+        try:
+            reply = await asyncio.to_thread(
+                process_message, app, user_text, f"tg_{chat_id}"
+            )
+            # Telegram message limit = 4096 chars
+            for i in range(0, len(reply), 4096):
+                await update.message.reply_text(reply[i:i + 4096])
+        except Exception as e:
+            app.logger.exception(f"[Claude AI TG] Error: {e}")
+            await update.message.reply_text(f"Loi: {e}")
+
     def run_bot():
         import asyncio
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
+            from telegram.ext import MessageHandler, filters
             application = ApplicationBuilder().token(token).build()
             application.add_handler(CommandHandler("status", cmd_status))
             application.add_handler(CommandHandler("disable", cmd_disable))
             application.add_handler(CommandHandler("enable", cmd_enable))
+            application.add_handler(CommandHandler("clear", cmd_clear))
+            application.add_handler(MessageHandler(
+                filters.TEXT & ~filters.COMMAND, handle_message
+            ))
 
             app.logger.info("Telegram bot connecting...")
             loop.run_until_complete(application.run_polling(drop_pending_updates=True))
