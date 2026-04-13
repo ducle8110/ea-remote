@@ -57,18 +57,40 @@ def heartbeat(user):
             cmd.acknowledged = True
             cmd.ack_at = now
 
-    # Fetch pending commands
-    pending = Command.query.filter_by(
+    # Auto-ack commands based on EA reported state
+    ea_cfg = data.get('current_config', {})
+    now = datetime.now(timezone.utc)
+    unacked = Command.query.filter_by(
         user_id=user.id, acknowledged=False
     ).order_by(Command.created_at).all()
 
     commands = []
-    for c in pending:
+    for c in unacked:
+        # Auto-ack if EA state already matches the command
+        if c.cmd_type == 'disable_trading' and ea_cfg.get('trading_enabled') == False:
+            c.acknowledged = True
+            c.ack_at = now
+            continue
+        if c.cmd_type == 'enable_trading' and ea_cfg.get('trading_enabled') == True:
+            c.acknowledged = True
+            c.ack_at = now
+            continue
+        if c.cmd_type == 'update_config':
+            # Auto-ack if all changed params match EA reported
+            try:
+                payload = json.loads(c.payload) if c.payload else {}
+            except json.JSONDecodeError:
+                payload = {}
+            if payload and all(ea_cfg.get(k) == v for k, v in payload.items()):
+                c.acknowledged = True
+                c.ack_at = now
+                continue
+
         cmd_data = {'id': c.id, 'type': c.cmd_type}
         if c.payload and c.payload != '{}':
             try:
                 parsed = json.loads(c.payload)
-                if parsed:  # Only include non-empty params
+                if parsed:
                     cmd_data['params'] = parsed
             except json.JSONDecodeError:
                 pass
