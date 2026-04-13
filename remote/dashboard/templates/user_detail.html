@@ -276,7 +276,7 @@ const numParams = ['fixed_lot','step_pip','max_per_side','max_spread_pip','ema_f
     'hours_before_close','max_drawdown_percent','enforce_on_pct','enforce_off_pct'];
 const selectParams = ['partial_tp_mode'];
 
-function updateTradingBanner(serverEnabled, eaEnabled, online) {
+function updateTradingBanner(eaEnabled, online) {
     const banner = document.getElementById('tradingBanner');
     const icon = document.getElementById('tradingIcon');
     const label = document.getElementById('tradingStatus');
@@ -286,36 +286,28 @@ function updateTradingBanner(serverEnabled, eaEnabled, online) {
         banner.className = 'trading-banner trading-unknown';
         icon.textContent = '?';
         label.textContent = 'EA OFFLINE';
-        detail.textContent = 'EA is not connected to server';
-    } else if (!serverEnabled && eaEnabled === false) {
-        // Both agree: disabled
+        detail.textContent = 'Không kết nối được với EA';
+    } else if (eaEnabled === false) {
         banner.className = 'trading-banner trading-disabled';
         icon.textContent = '\u26D4';
         label.textContent = 'TRADING DISABLED';
-        detail.textContent = 'EA has confirmed: trading is stopped';
-    } else if (!serverEnabled && eaEnabled !== false) {
-        // Server wants disabled, EA hasn't confirmed yet
-        banner.className = 'trading-banner trading-mismatch';
-        icon.textContent = '\u23F3';
-        label.textContent = 'DISABLING...';
-        detail.textContent = 'Waiting for EA to confirm disable command';
-    } else if (serverEnabled && eaEnabled === false) {
-        // Server wants enabled, EA still disabled
-        banner.className = 'trading-banner trading-mismatch';
-        icon.textContent = '\u23F3';
-        label.textContent = 'ENABLING...';
-        detail.textContent = 'Waiting for EA to confirm enable command';
-    } else {
-        // Both agree: enabled
+        detail.textContent = 'EA đã tắt trading, không mở lệnh mới';
+    } else if (eaEnabled === true) {
         banner.className = 'trading-banner trading-enabled';
         icon.textContent = '\u2705';
         label.textContent = 'TRADING ACTIVE';
-        detail.textContent = 'EA is running and accepting new trades';
+        detail.textContent = 'EA đang chạy, chấp nhận lệnh mới';
+    } else {
+        banner.className = 'trading-banner trading-unknown';
+        icon.textContent = '?';
+        label.textContent = 'WAITING...';
+        detail.textContent = 'Chờ EA báo trạng thái (heartbeat tiếp theo)';
     }
 
-    // Update action buttons
-    document.getElementById('btnDisable').style.display = serverEnabled ? '' : 'none';
-    document.getElementById('btnEnable').style.display = serverEnabled ? 'none' : '';
+    // Update action buttons based on EA actual state
+    const isEnabled = eaEnabled !== false;
+    document.getElementById('btnDisable').style.display = isEnabled ? '' : 'none';
+    document.getElementById('btnEnable').style.display = isEnabled ? 'none' : '';
 }
 
 async function loadUser() {
@@ -345,7 +337,7 @@ async function loadUser() {
     const eaCfg = d.ea_config;
 
     // Trading banner: server desired vs EA actual
-    updateTradingBanner(cfg.trading_enabled, eaCfg.trading_enabled, d.online);
+    updateTradingBanner(eaCfg.trading_enabled, d.online);
 
     numParams.forEach(k => {
         const el = document.getElementById('cfg_' + k);

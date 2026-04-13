@@ -46,46 +46,14 @@ def heartbeat(user):
     if data.get('ea_version'):
         user.ea_version = data['ea_version']
 
-    # Process acknowledged command IDs
-    ack_ids = data.get('ack_command_ids', [])
-    if ack_ids:
-        now = datetime.now(timezone.utc)
-        for cmd in Command.query.filter(
-            Command.id.in_(ack_ids),
-            Command.user_id == user.id
-        ).all():
-            cmd.acknowledged = True
-            cmd.ack_at = now
-
-    # Auto-ack commands based on EA reported state
-    ea_cfg = data.get('current_config', {})
+    # Fetch pending commands, send once then auto-ack
     now = datetime.now(timezone.utc)
-    unacked = Command.query.filter_by(
+    pending = Command.query.filter_by(
         user_id=user.id, acknowledged=False
     ).order_by(Command.created_at).all()
 
     commands = []
-    for c in unacked:
-        # Auto-ack if EA state already matches the command
-        if c.cmd_type == 'disable_trading' and ea_cfg.get('trading_enabled') == False:
-            c.acknowledged = True
-            c.ack_at = now
-            continue
-        if c.cmd_type == 'enable_trading' and ea_cfg.get('trading_enabled') == True:
-            c.acknowledged = True
-            c.ack_at = now
-            continue
-        if c.cmd_type == 'update_config':
-            # Auto-ack if all changed params match EA reported
-            try:
-                payload = json.loads(c.payload) if c.payload else {}
-            except json.JSONDecodeError:
-                payload = {}
-            if payload and all(ea_cfg.get(k) == v for k, v in payload.items()):
-                c.acknowledged = True
-                c.ack_at = now
-                continue
-
+    for c in pending:
         cmd_data = {'id': c.id, 'type': c.cmd_type}
         if c.payload and c.payload != '{}':
             try:
@@ -95,6 +63,9 @@ def heartbeat(user):
             except json.JSONDecodeError:
                 pass
         commands.append(cmd_data)
+        # Mark as acknowledged immediately (fire-and-forget)
+        c.acknowledged = True
+        c.ack_at = now
 
     # Include desired config if it differs from EA's current
     config = Config.query.filter_by(user_id=user.id).first()
