@@ -65,11 +65,13 @@ def heartbeat(user):
     commands = []
     for c in pending:
         cmd_data = {'id': c.id, 'type': c.cmd_type}
-        if c.payload:
+        if c.payload and c.payload != '{}':
             try:
-                cmd_data['params'] = json.loads(c.payload)
+                parsed = json.loads(c.payload)
+                if parsed:  # Only include non-empty params
+                    cmd_data['params'] = parsed
             except json.JSONDecodeError:
-                cmd_data['params'] = {}
+                pass
         commands.append(cmd_data)
 
     # Include desired config if it differs from EA's current
