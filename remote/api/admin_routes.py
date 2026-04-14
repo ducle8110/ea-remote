@@ -42,6 +42,7 @@ def list_users():
             'sell_count': hb.sell_count if hb else 0,
             'spread_pip': hb.spread_pip if hb else 0,
             'hedge_active': hb.hedge_active if hb else False,
+            'trading_enabled': u.config.trading_enabled if u.config else True,
         })
     return jsonify(result)
 
@@ -197,6 +198,54 @@ def send_command(user_id):
 
     db.session.commit()
     return jsonify({'status': 'ok', 'command_id': cmd.id})
+
+
+@admin_bp.route('/api/admin/bulk/command', methods=['POST'])
+@require_admin
+def bulk_command():
+    """Send enable/disable command to multiple users at once."""
+    data = request.get_json(silent=True) or {}
+    user_ids = data.get('user_ids', [])
+    cmd_type = data.get('type', '')
+
+    if not user_ids:
+        return jsonify({'error': 'No users selected'}), 400
+    if cmd_type not in ('enable_trading', 'disable_trading'):
+        return jsonify({'error': 'Only enable_trading/disable_trading allowed'}), 400
+
+    users = User.query.filter(User.id.in_(user_ids), User.is_active == True).all()
+    if not users:
+        return jsonify({'error': 'No valid users found'}), 404
+
+    opposite = {'disable_trading': 'enable_trading', 'enable_trading': 'disable_trading'}
+    now = datetime.now(timezone.utc)
+    processed = 0
+
+    for u in users:
+        if u.config:
+            u.config.trading_enabled = (cmd_type == 'enable_trading')
+
+        # Cancel opposite pending commands
+        for old_cmd in Command.query.filter_by(
+            user_id=u.id, cmd_type=opposite[cmd_type], acknowledged=False
+        ).all():
+            old_cmd.acknowledged = True
+            old_cmd.ack_at = now
+
+        db.session.add(Command(
+            user_id=u.id,
+            cmd_type=cmd_type,
+            payload='{}',
+        ))
+        db.session.add(EventLog(
+            user_id=u.id,
+            event_type=cmd_type,
+            detail='Bulk command by admin',
+        ))
+        processed += 1
+
+    db.session.commit()
+    return jsonify({'status': 'ok', 'processed': processed})
 
 
 @admin_bp.route('/api/admin/user', methods=['POST'])
