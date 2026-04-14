@@ -147,7 +147,13 @@ def start_telegram_bot(app: Flask):
             ))
 
             app.logger.info("Telegram bot connecting...")
-            loop.run_until_complete(application.run_polling(drop_pending_updates=True))
+            # Dùng initialize + start_polling thay vì run_polling
+            # vì run_polling đăng ký signal handler — không chạy được trong background thread
+            loop.run_until_complete(application.initialize())
+            loop.run_until_complete(application.updater.start_polling(drop_pending_updates=True))
+            loop.run_until_complete(application.start())
+            app.logger.info("Telegram bot polling started")
+            loop.run_forever()
         except Exception as e:
             app.logger.error(f"Telegram bot crashed: {e}")
             import traceback
