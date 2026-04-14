@@ -1,41 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - EA Remote Control{% endblock %}
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2 style="font-size:20px;">All Users</h2>
-    <span id="lastUpdate" style="color:var(--text2);font-size:12px;"></span>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">All Users</h2>
+    <small id="lastUpdate" class="text-body-secondary"></small>
 </div>
 
-<div id="bulkBar" style="display:none;margin-bottom:12px;align-items:center;gap:10px;">
-    <span id="selCount" style="color:var(--text2);font-size:13px;margin-right:4px;">0 selected</span>
-    <button class="btn btn-success" onclick="bulkCommand('enable_trading')">Enable Trading</button>
-    <button class="btn btn-danger" onclick="bulkCommand('disable_trading')">Disable Trading</button>
+<div id="bulkBar" class="d-none align-items-center gap-2 mb-3">
+    <span id="selCount" class="text-body-secondary small me-1">0 selected</span>
+    <button class="btn btn-success btn-sm" onclick="doBulk('enable_trading')">Enable Trading</button>
+    <button class="btn btn-danger btn-sm" onclick="doBulk('disable_trading')">Disable Trading</button>
 </div>
 
-<div class="card" style="padding:0;overflow:auto;">
-    <table>
-        <thead>
-            <tr>
-                <th style="width:36px;text-align:center;"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
-                <th>Name</th>
-                <th>Account</th>
-                <th>Broker</th>
-                <th>Symbol</th>
-                <th>Balance</th>
-                <th>Equity</th>
-                <th>Profit</th>
-                <th>DD%</th>
-                <th>BUY</th>
-                <th>SELL</th>
-                <th>Spread</th>
-                <th>Status</th>
-                <th>Version</th>
-            </tr>
-        </thead>
-        <tbody id="usersTable">
-            <tr><td colspan="14" style="text-align:center;color:var(--text2);">Loading...</td></tr>
-        </tbody>
-    </table>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:36px" class="text-center"><input class="form-check-input" type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                    <th>Name</th>
+                    <th>Account</th>
+                    <th>Broker</th>
+                    <th>Symbol</th>
+                    <th>Balance</th>
+                    <th>Equity</th>
+                    <th>Profit</th>
+                    <th>DD%</th>
+                    <th>BUY</th>
+                    <th>SELL</th>
+                    <th>Spread</th>
+                    <th>Status</th>
+                    <th>Version</th>
+                </tr>
+            </thead>
+            <tbody id="usersTable">
+                <tr><td colspan="14" class="text-center text-body-secondary">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading...
+                </td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}
 
@@ -44,20 +48,20 @@
 const selectedIds = new Set();
 
 function formatProfit(v) {
-    const cls = v >= 0 ? 'profit-pos' : 'profit-neg';
+    const cls = v >= 0 ? 'text-success' : 'text-danger';
     return `<span class="${cls}">${v >= 0 ? '+' : ''}${v.toFixed(2)}</span>`;
 }
 
 function statusBadge(online, lastSeenAgo) {
-    if (online) return '<span class="badge badge-online">ONLINE</span>';
+    if (online) return '<span class="badge bg-success">ONLINE</span>';
     if (lastSeenAgo !== null && lastSeenAgo < 120)
-        return `<span class="badge badge-stale">STALE ${lastSeenAgo}s</span>`;
-    return '<span class="badge badge-offline">OFFLINE</span>';
+        return `<span class="badge bg-warning text-dark">STALE ${lastSeenAgo}s</span>`;
+    return '<span class="badge bg-danger">OFFLINE</span>';
 }
 
 function ddColor(dd) {
-    if (dd >= 40) return 'profit-neg';
-    if (dd >= 25) return 'color:var(--yellow)';
+    if (dd >= 40) return 'text-danger';
+    if (dd >= 25) return 'text-warning';
     return '';
 }
 
@@ -88,14 +92,16 @@ function syncSelectAll() {
 function updateBulkBar() {
     const bar = document.getElementById('bulkBar');
     const count = selectedIds.size;
-    bar.style.display = count > 0 ? 'flex' : 'none';
+    bar.classList.toggle('d-none', count === 0);
+    bar.classList.toggle('d-flex', count > 0);
     document.getElementById('selCount').textContent = count + ' selected';
 }
 
-async function bulkCommand(type) {
+async function doBulk(type) {
     if (selectedIds.size === 0) return;
     const action = type === 'enable_trading' ? 'ENABLE' : 'DISABLE';
-    if (!confirm(`${action} trading for ${selectedIds.size} bot(s)?`)) return;
+    const ok = await showConfirm('Bulk Action', `${action} trading for ${selectedIds.size} bot(s)?`);
+    if (!ok) return;
 
     try {
         const res = await fetch('/api/admin/bulk/command', {
@@ -108,12 +114,13 @@ async function bulkCommand(type) {
             selectedIds.clear();
             updateBulkBar();
             document.getElementById('selectAll').checked = false;
+            showToast(`${action} trading for ${data.processed} bot(s)`, 'success');
             refresh();
         } else {
-            alert('Error: ' + (data.error || 'Unknown'));
+            showToast('Error: ' + (data.error || 'Unknown'), 'danger');
         }
     } catch (e) {
-        alert('Request failed: ' + e.message);
+        showToast('Request failed: ' + e.message, 'danger');
     }
 }
 
@@ -124,26 +131,25 @@ async function refresh() {
         const tbody = document.getElementById('usersTable');
 
         if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--text2);">No users yet. <a href="/user/new">Create one</a></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center text-body-secondary">No users yet. <a href="/user/new">Create one</a></td></tr>';
             return;
         }
 
-        // Remove stale selections (user deleted/deactivated)
         const validIds = new Set(users.map(u => u.id));
         for (const id of selectedIds) {
             if (!validIds.has(id)) selectedIds.delete(id);
         }
 
         tbody.innerHTML = users.map(u => `
-            <tr style="cursor:pointer" onclick="location.href='/user/${u.id}'">
-                <td style="text-align:center;" onclick="event.stopPropagation()">
-                    <input type="checkbox" data-uid="${u.id}"
+            <tr class="cursor-pointer" onclick="location.href='/user/${u.id}'">
+                <td class="text-center" onclick="event.stopPropagation()">
+                    <input class="form-check-input" type="checkbox" data-uid="${u.id}"
                            ${selectedIds.has(u.id) ? 'checked' : ''}
                            onchange="toggleSelect(${u.id}, this.checked)">
                 </td>
                 <td>
                     <strong>${u.name}</strong>
-                    ${u.trading_enabled ? '' : ' <span class="badge badge-offline" style="font-size:9px;">DISABLED</span>'}
+                    ${u.trading_enabled ? '' : ' <span class="badge bg-danger" style="font-size:9px;">DISABLED</span>'}
                 </td>
                 <td>${u.account_number || '-'}</td>
                 <td>${u.broker || '-'}</td>

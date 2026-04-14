@@ -1,22 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Logs - EA Remote Control{% endblock %}
 {% block content %}
-<h2 style="font-size:20px;margin-bottom:16px;">Event Logs</h2>
-<div class="card" style="padding:0;overflow:auto;">
-    <table>
-        <thead>
-            <tr><th>Time</th><th>User</th><th>Type</th><th>Detail</th></tr>
-        </thead>
-        <tbody>
-        {% for e in events %}
-        <tr>
-            <td style="white-space:nowrap;">{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') if e.created_at else '-' }}</td>
-            <td>{{ e.user.name if e.user else '-' }}</td>
-            <td>{{ e.event_type }}</td>
-            <td style="font-size:12px;max-width:400px;overflow:hidden;text-overflow:ellipsis;">{{ e.detail }}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+<h2 class="h5 mb-3">Event Logs</h2>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-striped table-sm align-middle mb-0">
+            <thead>
+                <tr><th>Time</th><th>User</th><th>Type</th><th>Detail</th></tr>
+            </thead>
+            <tbody>
+            {% for e in events %}
+            <tr>
+                <td class="text-nowrap">{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') if e.created_at else '-' }}</td>
+                <td>{{ e.user.name if e.user else '-' }}</td>
+                <td>{{ e.event_type }}</td>
+                <td class="small" style="max-width:400px;overflow:hidden;text-overflow:ellipsis;">{{ e.detail }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

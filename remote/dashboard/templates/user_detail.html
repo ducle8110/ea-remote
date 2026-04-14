@@ -1,15 +1,50 @@
 {% extends "base.html" %}
 {% block title %}{{ user.name }} - EA Remote Control{% endblock %}
+
+{% block extra_css %}
+<style>
+.trading-banner {
+    display:flex; align-items:center; gap:1rem;
+    padding:1rem 1.25rem; border-radius:var(--bs-border-radius-lg); font-weight:600;
+}
+.trading-icon { font-size:1.75rem; line-height:1; }
+.trading-label { font-size:1.1rem; }
+.trading-detail { font-size:0.75rem; font-weight:400; margin-top:2px; }
+.trading-enabled {
+    background:var(--bs-success-bg-subtle); border:2px solid var(--bs-success);
+    color:var(--bs-success-text-emphasis);
+}
+.trading-disabled {
+    background:var(--bs-danger-bg-subtle); border:2px solid var(--bs-danger);
+    color:var(--bs-danger-text-emphasis);
+}
+.trading-unknown {
+    background:var(--bs-secondary-bg); border:2px solid var(--bs-border-color);
+    color:var(--bs-body-color);
+}
+.trading-mismatch {
+    background:var(--bs-warning-bg-subtle); border:2px solid var(--bs-warning);
+    color:var(--bs-warning-text-emphasis);
+}
+.ea-val { font-size:0.7rem; }
+.config-field { padding:4px 8px; border-radius:4px; border-left:3px solid transparent; }
+.config-field.pending { background:rgba(255,193,7,0.1); border-left-color:var(--bs-warning); }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="margin-bottom:20px;">
-    <a href="/">&larr; Back to Dashboard</a>
-    <h2 style="font-size:20px;margin-top:8px;">{{ user.name }}
-        <span id="statusBadge" class="badge badge-offline">...</span>
-    </h2>
-</div>
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item active">{{ user.name }}</li>
+    </ol>
+</nav>
+<h2 class="h5 mb-3">{{ user.name }}
+    <span id="statusBadge" class="badge bg-danger">...</span>
+</h2>
 
 <!-- Trading Status Banner -->
-<div id="tradingBanner" class="trading-banner trading-unknown" style="margin-bottom:20px;">
+<div id="tradingBanner" class="trading-banner trading-unknown mb-4">
     <div id="tradingIcon" class="trading-icon">?</div>
     <div>
         <div id="tradingStatus" class="trading-label">Loading...</div>
@@ -18,276 +53,295 @@
 </div>
 
 <!-- Live Status -->
-<div class="grid-3" id="statusCards" style="margin-bottom:20px;">
-    <div class="card">
-        <div class="stat-label">Balance</div>
-        <div class="stat-value" id="sBalance">-</div>
+<div class="row g-3 mb-4" id="statusCards">
+    <div class="col-md-4 col-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label text-body-secondary">Balance</div>
+            <div class="stat-value" id="sBalance">-</div>
+        </div></div>
     </div>
-    <div class="card">
-        <div class="stat-label">Equity</div>
-        <div class="stat-value" id="sEquity">-</div>
+    <div class="col-md-4 col-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label text-body-secondary">Equity</div>
+            <div class="stat-value" id="sEquity">-</div>
+        </div></div>
     </div>
-    <div class="card">
-        <div class="stat-label">Profit</div>
-        <div class="stat-value" id="sProfit">-</div>
+    <div class="col-md-4 col-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label text-body-secondary">Profit</div>
+            <div class="stat-value" id="sProfit">-</div>
+        </div></div>
     </div>
-    <div class="card">
-        <div class="stat-label">Drawdown</div>
-        <div class="stat-value" id="sDD">-</div>
+    <div class="col-md-4 col-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label text-body-secondary">Drawdown</div>
+            <div class="stat-value" id="sDD">-</div>
+        </div></div>
     </div>
-    <div class="card">
-        <div class="stat-label">Positions (BUY / SELL)</div>
-        <div class="stat-value" id="sPos">-</div>
+    <div class="col-md-4 col-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label text-body-secondary">Positions (BUY / SELL)</div>
+            <div class="stat-value" id="sPos">-</div>
+        </div></div>
     </div>
-    <div class="card">
-        <div class="stat-label">Spread</div>
-        <div class="stat-value" id="sSpread">-</div>
+    <div class="col-md-4 col-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label text-body-secondary">Spread</div>
+            <div class="stat-value" id="sSpread">-</div>
+        </div></div>
     </div>
 </div>
 
 <!-- Actions -->
-<div class="card" style="margin-bottom:20px;">
-    <h2>Actions</h2>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button id="btnDisable" class="btn btn-danger" onclick="sendCmd('disable_trading')">Disable Trading</button>
-        <button id="btnEnable" class="btn btn-success" onclick="sendCmd('enable_trading')">Enable Trading</button>
-        <button class="btn btn-danger" onclick="if(confirm('Close ALL positions for this user?')) sendCmd('close_all')">Close All</button>
+<div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">Actions</h6></div>
+    <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+            <button id="btnDisable" class="btn btn-danger" onclick="sendCmd('disable_trading')">Disable Trading</button>
+            <button id="btnEnable" class="btn btn-success" onclick="sendCmd('enable_trading')">Enable Trading</button>
+            <button class="btn btn-outline-danger" id="btnCloseAll">Close All</button>
+        </div>
+        <div id="cmdResult" class="mt-2 small text-body-secondary"></div>
     </div>
-    <div id="cmdResult" style="margin-top:8px;font-size:13px;color:var(--text2);"></div>
 </div>
 
 <!-- Tool Files -->
-<div class="card" style="margin-bottom:20px;">
-    <h2>Tool Files</h2>
-    <div id="toolInfo" style="margin-bottom:12px;">
-        {% if user.tool_filename %}
-        <div style="margin-bottom:8px;">
-            <span style="color:var(--accent);font-weight:600;">{{ user.tool_filename }}</span>
-            {% if user.tool_mq5 %}
-                <a href="/api/admin/user/{{ user.id }}/download/mq5" class="btn btn-primary" style="margin-left:8px;padding:4px 10px;font-size:12px;">Download .mq5</a>
-            {% endif %}
-            {% if user.tool_ex5 %}
-                <a href="/api/admin/user/{{ user.id }}/download/ex5" class="btn btn-primary" style="margin-left:4px;padding:4px 10px;font-size:12px;">Download .ex5</a>
+<div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">Tool Files</h6></div>
+    <div class="card-body">
+        <div id="toolInfo" class="mb-3">
+            {% if user.tool_filename %}
+            <div class="mb-2">
+                <span class="text-primary fw-semibold">{{ user.tool_filename }}</span>
+                {% if user.tool_mq5 %}
+                    <a href="/api/admin/user/{{ user.id }}/download/mq5" class="btn btn-primary btn-sm ms-2">Download .mq5</a>
+                {% endif %}
+                {% if user.tool_ex5 %}
+                    <a href="/api/admin/user/{{ user.id }}/download/ex5" class="btn btn-primary btn-sm ms-1">Download .ex5</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="text-body-secondary mb-2">No tool files uploaded yet</div>
             {% endif %}
         </div>
-        {% else %}
-        <div style="color:var(--text2);margin-bottom:8px;">No tool files uploaded yet</div>
-        {% endif %}
+        <form id="uploadForm" enctype="multipart/form-data" class="d-flex gap-2 align-items-end flex-wrap">
+            <div>
+                <label class="form-label mb-1">MQ5 file</label>
+                <input type="file" class="form-control form-control-sm" name="mq5" accept=".mq5">
+            </div>
+            <div>
+                <label class="form-label mb-1">EX5 file</label>
+                <input type="file" class="form-control form-control-sm" name="ex5" accept=".ex5">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+            <span id="uploadResult" class="small text-body-secondary"></span>
+        </form>
     </div>
-    <form id="uploadForm" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
-        <div>
-            <label>MQ5 file</label>
-            <input type="file" name="mq5" accept=".mq5" style="font-size:12px;">
-        </div>
-        <div>
-            <label>EX5 file</label>
-            <input type="file" name="ex5" accept=".ex5" style="font-size:12px;">
-        </div>
-        <button type="submit" class="btn btn-primary">Upload</button>
-        <span id="uploadResult" style="font-size:13px;color:var(--text2);"></span>
-    </form>
 </div>
 
-<!-- Config Editor (grouped by section) -->
-<div class="card" style="margin-bottom:20px;">
-    <h2>Config</h2>
-    <div id="configSummary" style="font-size:13px;margin-bottom:12px;"></div>
-    <form id="configForm">
+<!-- Config Editor (Accordion) -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Config</h6>
+        <span id="configSummary" class="small"></span>
+    </div>
+    <div class="card-body">
+        <form id="configForm">
+            <div class="accordion" id="configAccordion">
 
-        <!-- Trading -->
-        <div class="config-section">
-            <h3 class="section-title">Trading</h3>
-            <div class="grid-3">
-                <div class="config-field">
-                    <label>Fixed Lot <span id="ea_fixed_lot" class="ea-val"></span></label>
-                    <input type="number" name="fixed_lot" id="cfg_fixed_lot" step="0.01" style="width:100%;">
+                <!-- Trading -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cfgTrading">Trading</button>
+                    </h2>
+                    <div id="cfgTrading" class="accordion-collapse collapse show" data-bs-parent="#configAccordion">
+                        <div class="accordion-body">
+                            <div class="row g-3">
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Fixed Lot <span id="ea_fixed_lot" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="fixed_lot" id="cfg_fixed_lot" step="0.01">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Step Pip <span id="ea_step_pip" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="step_pip" id="cfg_step_pip" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Max Per Side <span id="ea_max_per_side" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="max_per_side" id="cfg_max_per_side" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Max Spread Pip <span id="ea_max_spread_pip" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="max_spread_pip" id="cfg_max_spread_pip" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">EMA Fast <span id="ea_ema_fast" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="ema_fast" id="cfg_ema_fast" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">EMA Slow <span id="ea_ema_slow" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="ema_slow" id="cfg_ema_slow" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="config-field">
-                    <label>Step Pip <span id="ea_step_pip" class="ea-val"></span></label>
-                    <input type="number" name="step_pip" id="cfg_step_pip" step="1" style="width:100%;">
+
+                <!-- Take Profit -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cfgTP">Take Profit</button>
+                    </h2>
+                    <div id="cfgTP" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                        <div class="accordion-body">
+                            <div class="row g-3">
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Cluster TP ($) <span id="ea_cluster_tp_usd" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="cluster_tp_usd" id="cfg_cluster_tp_usd" step="0.01">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Partial TP Mode <span id="ea_partial_tp_mode" class="ea-val text-body-secondary"></span></label>
+                                    <select class="form-select" name="partial_tp_mode" id="cfg_partial_tp_mode">
+                                        <option value="0">0 - CloseFar</option>
+                                        <option value="1">1 - Combo 2+1</option>
+                                        <option value="2">2 - Dual</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Partial TP ($) <span id="ea_partial_tp_usd" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="partial_tp_usd" id="cfg_partial_tp_usd" step="0.01">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Partial Same Dir <span id="ea_partial_tp_same_dir" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="partial_tp_same_dir" id="cfg_partial_tp_same_dir" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="config-field">
-                    <label>Max Per Side <span id="ea_max_per_side" class="ea-val"></span></label>
-                    <input type="number" name="max_per_side" id="cfg_max_per_side" step="1" style="width:100%;">
+
+                <!-- Weekend Hedge -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cfgWeekend">Weekend Hedge</button>
+                    </h2>
+                    <div id="cfgWeekend" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                        <div class="accordion-body">
+                            <div class="row g-3">
+                                <div class="col-md-4 config-field">
+                                    <div class="form-check mt-3">
+                                        <input class="form-check-input" type="checkbox" name="enable_weekend_hedge" id="cfg_enable_weekend_hedge">
+                                        <label class="form-check-label" for="cfg_enable_weekend_hedge">
+                                            Enable Weekend Hedge <span id="ea_enable_weekend_hedge" class="ea-val text-body-secondary"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Hours Before Close <span id="ea_hours_before_close" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="hours_before_close" id="cfg_hours_before_close" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="config-field">
-                    <label>Max Spread Pip <span id="ea_max_spread_pip" class="ea-val"></span></label>
-                    <input type="number" name="max_spread_pip" id="cfg_max_spread_pip" step="1" style="width:100%;">
-                </div>
-                <div class="config-field">
-                    <label>EMA Fast <span id="ea_ema_fast" class="ea-val"></span></label>
-                    <input type="number" name="ema_fast" id="cfg_ema_fast" step="1" style="width:100%;">
-                </div>
-                <div class="config-field">
-                    <label>EMA Slow <span id="ea_ema_slow" class="ea-val"></span></label>
-                    <input type="number" name="ema_slow" id="cfg_ema_slow" step="1" style="width:100%;">
+
+                <!-- Safety -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cfgSafety">Safety</button>
+                    </h2>
+                    <div id="cfgSafety" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                        <div class="accordion-body">
+                            <div class="row g-3">
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Max DD % <span id="ea_max_drawdown_percent" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="max_drawdown_percent" id="cfg_max_drawdown_percent" step="0.1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Enforce ON % <span id="ea_enforce_on_pct" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="enforce_on_pct" id="cfg_enforce_on_pct" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Enforce OFF % <span id="ea_enforce_off_pct" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="enforce_off_pct" id="cfg_enforce_off_pct" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <div class="form-check mt-3">
+                                        <input class="form-check-input" type="checkbox" name="enforce_step_buy" id="cfg_enforce_step_buy">
+                                        <label class="form-check-label" for="cfg_enforce_step_buy">
+                                            Enforce Step BUY <span id="ea_enforce_step_buy" class="ea-val text-body-secondary"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <div class="form-check mt-3">
+                                        <input class="form-check-input" type="checkbox" name="enforce_step_sell" id="cfg_enforce_step_sell">
+                                        <label class="form-check-label" for="cfg_enforce_step_sell">
+                                            Enforce Step SELL <span id="ea_enforce_step_sell" class="ea-val text-body-secondary"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <div class="form-check mt-3">
+                                        <input class="form-check-input" type="checkbox" name="auto_enforce_step" id="cfg_auto_enforce_step">
+                                        <label class="form-check-label" for="cfg_auto_enforce_step">
+                                            Auto Enforce Step <span id="ea_auto_enforce_step" class="ea-val text-body-secondary"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Take Profit -->
-        <div class="config-section">
-            <h3 class="section-title">Take Profit</h3>
-            <div class="grid-3">
-                <div class="config-field">
-                    <label>Cluster TP ($) <span id="ea_cluster_tp_usd" class="ea-val"></span></label>
-                    <input type="number" name="cluster_tp_usd" id="cfg_cluster_tp_usd" step="0.01" style="width:100%;">
-                </div>
-                <div class="config-field">
-                    <label>Partial TP Mode <span id="ea_partial_tp_mode" class="ea-val"></span></label>
-                    <select name="partial_tp_mode" id="cfg_partial_tp_mode" style="width:100%;">
-                        <option value="0">0 - CloseFar</option>
-                        <option value="1">1 - Combo 2+1</option>
-                        <option value="2">2 - Dual</option>
-                    </select>
-                </div>
-                <div class="config-field">
-                    <label>Partial TP ($) <span id="ea_partial_tp_usd" class="ea-val"></span></label>
-                    <input type="number" name="partial_tp_usd" id="cfg_partial_tp_usd" step="0.01" style="width:100%;">
-                </div>
-                <div class="config-field">
-                    <label>Partial Same Dir <span id="ea_partial_tp_same_dir" class="ea-val"></span></label>
-                    <input type="number" name="partial_tp_same_dir" id="cfg_partial_tp_same_dir" step="1" style="width:100%;">
-                </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Save Config</button>
+                <span id="saveResult" class="ms-2 small text-body-secondary"></span>
             </div>
-        </div>
-
-        <!-- Weekend -->
-        <div class="config-section">
-            <h3 class="section-title">Weekend Hedge</h3>
-            <div class="grid-3">
-                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="enable_weekend_hedge" id="cfg_enable_weekend_hedge">
-                    <label for="cfg_enable_weekend_hedge" style="margin:0;">Enable Weekend Hedge
-                        <span id="ea_enable_weekend_hedge" class="ea-val"></span>
-                    </label>
-                </div>
-                <div class="config-field">
-                    <label>Hours Before Close <span id="ea_hours_before_close" class="ea-val"></span></label>
-                    <input type="number" name="hours_before_close" id="cfg_hours_before_close" step="1" style="width:100%;">
-                </div>
-            </div>
-        </div>
-
-        <!-- Safety -->
-        <div class="config-section">
-            <h3 class="section-title">Safety</h3>
-            <div class="grid-3">
-                <div class="config-field">
-                    <label>Max DD % <span id="ea_max_drawdown_percent" class="ea-val"></span></label>
-                    <input type="number" name="max_drawdown_percent" id="cfg_max_drawdown_percent" step="0.1" style="width:100%;">
-                </div>
-                <div class="config-field">
-                    <label>Enforce ON % <span id="ea_enforce_on_pct" class="ea-val"></span></label>
-                    <input type="number" name="enforce_on_pct" id="cfg_enforce_on_pct" step="1" style="width:100%;">
-                </div>
-                <div class="config-field">
-                    <label>Enforce OFF % <span id="ea_enforce_off_pct" class="ea-val"></span></label>
-                    <input type="number" name="enforce_off_pct" id="cfg_enforce_off_pct" step="1" style="width:100%;">
-                </div>
-                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="enforce_step_buy" id="cfg_enforce_step_buy">
-                    <label for="cfg_enforce_step_buy" style="margin:0;">Enforce Step BUY
-                        <span id="ea_enforce_step_buy" class="ea-val"></span>
-                    </label>
-                </div>
-                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="enforce_step_sell" id="cfg_enforce_step_sell">
-                    <label for="cfg_enforce_step_sell" style="margin:0;">Enforce Step SELL
-                        <span id="ea_enforce_step_sell" class="ea-val"></span>
-                    </label>
-                </div>
-                <div class="config-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                    <input type="checkbox" name="auto_enforce_step" id="cfg_auto_enforce_step">
-                    <label for="cfg_auto_enforce_step" style="margin:0;">Auto Enforce Step
-                        <span id="ea_auto_enforce_step" class="ea-val"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div style="margin-top:16px;">
-            <button type="submit" class="btn btn-primary">Save Config</button>
-            <span id="saveResult" style="margin-left:12px;font-size:13px;color:var(--text2);"></span>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <!-- Note -->
-<div class="card" style="margin-bottom:20px;">
-    <h2>Note</h2>
-    <div style="display:flex;gap:10px;align-items:start;">
-        <textarea id="userNote" rows="3" style="width:100%;font-size:13px;">{{ user.note or '' }}</textarea>
-        <button class="btn btn-primary" style="white-space:nowrap;" onclick="saveNote()">Save</button>
+<div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">Note</h6></div>
+    <div class="card-body">
+        <div class="d-flex gap-2 align-items-start">
+            <textarea id="userNote" class="form-control" rows="3">{{ user.note or '' }}</textarea>
+            <button class="btn btn-primary text-nowrap" onclick="saveNote()">Save</button>
+        </div>
+        <small id="noteResult" class="text-body-secondary"></small>
     </div>
-    <span id="noteResult" style="font-size:12px;color:var(--text2);"></span>
 </div>
 
 <!-- API Key -->
-<div class="card" style="margin-bottom:20px;">
-    <h2>API Key</h2>
-    <code style="background:var(--bg3);padding:8px 12px;border-radius:4px;display:block;user-select:all;">{{ user.api_key }}</code>
+<div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">API Key</h6></div>
+    <div class="card-body">
+        <code class="d-block p-2 bg-body-tertiary rounded user-select-all">{{ user.api_key }}</code>
+    </div>
 </div>
 
 <!-- Event Log -->
 <div class="card">
-    <h2>Recent Events</h2>
-    <table>
-        <thead><tr><th>Time</th><th>Type</th><th>Detail</th></tr></thead>
-        <tbody id="eventsBody"></tbody>
-    </table>
-    <div id="eventsPager" style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;">
-        <button id="evtPrev" class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="loadEvents(evtPage-1)">&larr; Prev</button>
-        <span id="evtInfo" style="color:var(--text2);"></span>
-        <button id="evtNext" class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="loadEvents(evtPage+1)">Next &rarr;</button>
+    <div class="card-header"><h6 class="mb-0">Recent Events</h6></div>
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead><tr><th>Time</th><th>Type</th><th>Detail</th></tr></thead>
+            <tbody id="eventsBody"></tbody>
+        </table>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex align-items-center gap-2">
+            <button id="evtPrev" class="btn btn-outline-primary btn-sm" onclick="loadEvents(evtPage-1)">&larr; Prev</button>
+            <span id="evtInfo" class="small text-body-secondary"></span>
+            <button id="evtNext" class="btn btn-outline-primary btn-sm" onclick="loadEvents(evtPage+1)">Next &rarr;</button>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<style>
-.config-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border); }
-.config-section:last-of-type { border-bottom:none; }
-.section-title { font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
-.ea-val { color:var(--text2); font-size:11px; }
-.ea-val.diff { color:#e74c3c; font-weight:600; }
-.config-field { padding:4px 8px; border-radius:4px; border-left:3px solid transparent; }
-.config-field.pending {
-    background:#fff3cd; border-left-color:#ffc107;
-}
-.pending-badge {
-    display:inline-block; background:#ffc107; color:#856404;
-    font-size:10px; padding:1px 6px; border-radius:3px; margin-left:4px; font-weight:600;
-}
-.synced-badge {
-    display:inline-block; background:#28a745; color:white;
-    font-size:10px; padding:1px 6px; border-radius:3px; margin-left:4px;
-}
-
-/* Trading Status Banner */
-.trading-banner {
-    display:flex; align-items:center; gap:16px;
-    padding:16px 20px; border-radius:8px; font-weight:600;
-}
-.trading-icon { font-size:28px; line-height:1; }
-.trading-label { font-size:18px; }
-.trading-detail { font-size:12px; font-weight:400; margin-top:2px; }
-.trading-enabled {
-    background:linear-gradient(135deg, #d4edda, #c3e6cb);
-    border:2px solid #28a745; color:#155724;
-}
-.trading-disabled {
-    background:linear-gradient(135deg, #f8d7da, #f5c6cb);
-    border:2px solid #dc3545; color:#721c24;
-}
-.trading-unknown {
-    background:var(--bg2); border:2px solid var(--border); color:var(--text2);
-}
-.trading-mismatch {
-    background:linear-gradient(135deg, #fff3cd, #ffeeba);
-    border:2px solid #ffc107; color:#856404;
-}
-</style>
 <script>
 const userId = {{ user.id }};
 const boolParams = ['enable_weekend_hedge','enforce_step_buy','enforce_step_sell','auto_enforce_step','trading_enabled'];
@@ -296,6 +350,12 @@ const numParams = ['fixed_lot','step_pip','max_per_side','max_spread_pip','ema_f
     'hours_before_close','max_drawdown_percent','enforce_on_pct','enforce_off_pct'];
 const selectParams = ['partial_tp_mode'];
 
+// Close All button with confirm modal
+document.getElementById('btnCloseAll').addEventListener('click', async () => {
+    const ok = await showConfirm('Close All Positions', 'Close ALL positions for this user? This cannot be undone.');
+    if (ok) sendCmd('close_all');
+});
+
 function updateTradingBanner(eaEnabled, online) {
     const banner = document.getElementById('tradingBanner');
     const icon = document.getElementById('tradingIcon');
@@ -303,28 +363,27 @@ function updateTradingBanner(eaEnabled, online) {
     const detail = document.getElementById('tradingDetail');
 
     if (!online) {
-        banner.className = 'trading-banner trading-unknown';
+        banner.className = 'trading-banner trading-unknown mb-4';
         icon.textContent = '?';
         label.textContent = 'EA OFFLINE';
         detail.textContent = 'Không kết nối được với EA';
     } else if (eaEnabled === false) {
-        banner.className = 'trading-banner trading-disabled';
+        banner.className = 'trading-banner trading-disabled mb-4';
         icon.textContent = '\u26D4';
         label.textContent = 'TRADING DISABLED';
         detail.textContent = 'EA đã tắt trading, không mở lệnh mới';
     } else if (eaEnabled === true) {
-        banner.className = 'trading-banner trading-enabled';
+        banner.className = 'trading-banner trading-enabled mb-4';
         icon.textContent = '\u2705';
         label.textContent = 'TRADING ACTIVE';
         detail.textContent = 'EA đang chạy, chấp nhận lệnh mới';
     } else {
-        banner.className = 'trading-banner trading-unknown';
+        banner.className = 'trading-banner trading-unknown mb-4';
         icon.textContent = '?';
         label.textContent = 'WAITING...';
         detail.textContent = 'Chờ EA báo trạng thái (heartbeat tiếp theo)';
     }
 
-    // Update action buttons based on EA actual state
     const isEnabled = eaEnabled !== false;
     document.getElementById('btnDisable').style.display = isEnabled ? '' : 'none';
     document.getElementById('btnEnable').style.display = isEnabled ? 'none' : '';
@@ -337,7 +396,7 @@ async function loadUser() {
 
     // Status badge
     const badge = document.getElementById('statusBadge');
-    badge.className = 'badge ' + (d.online ? 'badge-online' : 'badge-offline');
+    badge.className = 'badge ' + (d.online ? 'bg-success' : 'bg-danger');
     badge.textContent = d.online ? 'ONLINE' : 'OFFLINE';
 
     // Stats
@@ -345,10 +404,10 @@ async function loadUser() {
     document.getElementById('sEquity').textContent = '$' + hb.equity.toFixed(2);
     const profitEl = document.getElementById('sProfit');
     profitEl.textContent = (hb.profit >= 0 ? '+' : '') + '$' + hb.profit.toFixed(2);
-    profitEl.className = 'stat-value ' + (hb.profit >= 0 ? 'profit-pos' : 'profit-neg');
+    profitEl.className = 'stat-value ' + (hb.profit >= 0 ? 'text-success' : 'text-danger');
     const ddEl = document.getElementById('sDD');
     ddEl.textContent = hb.dd_pct.toFixed(1) + '%';
-    ddEl.className = 'stat-value ' + (hb.dd_pct >= 40 ? 'profit-neg' : '');
+    ddEl.className = 'stat-value ' + (hb.dd_pct >= 40 ? 'text-danger' : '');
     document.getElementById('sPos').textContent = hb.buy_count + ' / ' + hb.sell_count;
     document.getElementById('sSpread').textContent = hb.spread_pip.toFixed(1) + ' pip';
 
@@ -357,7 +416,6 @@ async function loadUser() {
     const eaCfg = d.ea_config;
     let pendingCount = 0;
 
-    // Trading banner: server desired vs EA actual
     updateTradingBanner(eaCfg.trading_enabled, d.online);
 
     function markField(el, eaEl, isDiff, eaText) {
@@ -372,14 +430,14 @@ async function loadUser() {
         }
         if (eaEl) {
             if (isDiff) {
-                eaEl.innerHTML = `(EA: ${eaText}) <span class="pending-badge">PENDING</span>`;
-                eaEl.className = 'ea-val diff';
+                eaEl.innerHTML = `(EA: ${eaText}) <span class="badge bg-warning text-dark" style="font-size:10px;">PENDING</span>`;
+                eaEl.className = 'ea-val text-danger';
             } else if (eaText !== null) {
-                eaEl.innerHTML = `<span class="synced-badge">\u2713</span>`;
-                eaEl.className = 'ea-val';
+                eaEl.innerHTML = `<span class="badge bg-success" style="font-size:10px;">\u2713</span>`;
+                eaEl.className = 'ea-val text-body-secondary';
             } else {
                 eaEl.innerHTML = '(EA: -)';
-                eaEl.className = 'ea-val';
+                eaEl.className = 'ea-val text-body-secondary';
             }
         }
     }
@@ -415,11 +473,11 @@ async function loadUser() {
     // Summary
     const summary = document.getElementById('configSummary');
     if (pendingCount > 0) {
-        summary.innerHTML = `<span style="color:#856404;background:#fff3cd;padding:4px 10px;border-radius:4px;font-weight:600;">${pendingCount} param(s) PENDING sync</span>`;
+        summary.innerHTML = `<span class="badge bg-warning text-dark">${pendingCount} param(s) PENDING sync</span>`;
     } else if (Object.keys(eaCfg).length > 0) {
-        summary.innerHTML = `<span style="color:#155724;background:#d4edda;padding:4px 10px;border-radius:4px;">All synced \u2713</span>`;
+        summary.innerHTML = `<span class="badge bg-success">All synced \u2713</span>`;
     } else {
-        summary.innerHTML = `<span style="color:var(--text2);">EA ch\u01B0a report config</span>`;
+        summary.innerHTML = `<span class="text-body-secondary">EA ch\u01B0a report config</span>`;
     }
 }
 
@@ -430,6 +488,11 @@ async function sendCmd(type) {
         body: JSON.stringify({type})
     });
     const d = await res.json();
+    if (d.status === 'ok') {
+        showToast(`Command "${type}" sent (ID: ${d.command_id})`, 'success');
+    } else {
+        showToast(`Error: ${d.error}`, 'danger');
+    }
     document.getElementById('cmdResult').textContent = d.status === 'ok'
         ? `Command "${type}" sent (ID: ${d.command_id})`
         : `Error: ${d.error}`;
@@ -459,6 +522,11 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
     });
     const d = await res.json();
     const changes = Object.keys(d.changed || {});
+    if (changes.length > 0) {
+        showToast(`Saved: ${changes.join(', ')}`, 'success');
+    } else {
+        showToast('No changes', 'info');
+    }
     document.getElementById('saveResult').textContent = changes.length > 0
         ? `Saved: ${changes.join(', ')}`
         : 'No changes';
@@ -472,10 +540,12 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         body: form
     });
     const d = await res.json();
-    document.getElementById('uploadResult').textContent = d.status === 'ok'
-        ? `Uploaded: ${d.tool_filename}`
-        : `Error: ${d.error}`;
-    if (d.status === 'ok') setTimeout(() => location.reload(), 1000);
+    if (d.status === 'ok') {
+        showToast(`Uploaded: ${d.tool_filename}`, 'success');
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showToast(`Error: ${d.error}`, 'danger');
+    }
 });
 
 async function saveNote() {
@@ -486,8 +556,8 @@ async function saveNote() {
         body: JSON.stringify({note})
     });
     const d = await res.json();
-    document.getElementById('noteResult').textContent = d.status === 'ok' ? 'Saved' : 'Error';
-    setTimeout(() => document.getElementById('noteResult').textContent = '', 2000);
+    if (d.status === 'ok') showToast('Note saved', 'success');
+    else showToast('Error saving note', 'danger');
 }
 
 let evtPage = 1;
@@ -502,7 +572,7 @@ async function loadEvents(page) {
     tbody.innerHTML = d.logs.map(e => {
         const dt = e.created_at ? new Date(e.created_at) : null;
         const time = dt ? `${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : '-';
-        return `<tr><td style="white-space:nowrap;">${time}</td><td>${e.event_type}</td><td style="font-size:12px;">${e.detail || ''}</td></tr>`;
+        return `<tr><td class="text-nowrap">${time}</td><td>${e.event_type}</td><td class="small">${e.detail || ''}</td></tr>`;
     }).join('');
     document.getElementById('evtInfo').textContent = `Page ${d.page} / ${d.total_pages} (${d.total} events)`;
     document.getElementById('evtPrev').disabled = d.page <= 1;

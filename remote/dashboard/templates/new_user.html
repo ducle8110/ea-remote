@@ -1,25 +1,27 @@
 {% extends "base.html" %}
 {% block title %}New User - EA Remote Control{% endblock %}
 {% block content %}
-<div style="max-width:500px;">
-    <h2 style="font-size:20px;margin-bottom:16px;">Create New User</h2>
+<div class="col-md-6">
+    <h2 class="h5 mb-3">Create New User</h2>
     <div class="card">
-        <form id="createForm">
-            <div style="margin-bottom:12px;">
-                <label>Name *</label>
-                <input type="text" name="name" id="name" required style="width:100%;" placeholder="Client A">
+        <div class="card-body">
+            <form id="createForm">
+                <div class="mb-3">
+                    <label class="form-label">Name *</label>
+                    <input type="text" class="form-control" name="name" id="name" required placeholder="Client A">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Note</label>
+                    <input type="text" class="form-control" name="note" id="note" placeholder="Optional notes">
+                </div>
+                <button type="submit" class="btn btn-primary">Create User</button>
+            </form>
+            <div id="result" class="mt-3 d-none">
+                <div class="alert alert-success">User created!</div>
+                <label class="form-label">API Key (copy and give to user):</label>
+                <code id="apiKey" class="d-block p-2 bg-body-tertiary rounded user-select-all text-break"></code>
+                <a id="goDetail" href="#" class="btn btn-primary mt-3">Go to User Detail &rarr;</a>
             </div>
-            <div style="margin-bottom:16px;">
-                <label>Note</label>
-                <input type="text" name="note" id="note" style="width:100%;" placeholder="Optional notes">
-            </div>
-            <button type="submit" class="btn btn-primary">Create User</button>
-        </form>
-        <div id="result" style="margin-top:16px;display:none;">
-            <div style="color:var(--green);margin-bottom:8px;">User created!</div>
-            <label>API Key (copy and give to user):</label>
-            <code id="apiKey" style="background:var(--bg3);padding:8px 12px;border-radius:4px;display:block;user-select:all;word-break:break-all;margin-top:4px;"></code>
-            <a id="goDetail" href="#" class="btn btn-primary" style="margin-top:12px;">Go to User Detail &rarr;</a>
         </div>
     </div>
 </div>
@@ -42,7 +44,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     if (d.api_key) {
         document.getElementById('apiKey').textContent = d.api_key;
         document.getElementById('goDetail').href = '/user/' + d.id;
-        document.getElementById('result').style.display = 'block';
+        document.getElementById('result').classList.remove('d-none');
     }
 });
 </script>
