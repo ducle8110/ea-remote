@@ -5,8 +5,9 @@ from remote.models import db
 
 
 def _migrate_if_needed(app):
-    """Drop configs table if schema doesn't match current model."""
+    """Add missing columns to configs table if schema is outdated."""
     from sqlalchemy import inspect, text
+    from remote.models import Config
     inspector = inspect(db.engine)
     if 'configs' in inspector.get_table_names():
         columns = {c['name'] for c in inspector.get_columns('configs')}
@@ -15,6 +16,19 @@ def _migrate_if_needed(app):
             app.logger.info("Configs table schema mismatch, recreating...")
             db.session.execute(text('DROP TABLE configs'))
             db.session.commit()
+            return
+        # Add missing columns with defaults
+        col_defaults = {
+            'dual_switch_high': ('INTEGER', 50),
+            'dual_switch_low': ('INTEGER', 25),
+        }
+        for col, (col_type, default) in col_defaults.items():
+            if col not in columns:
+                app.logger.info(f"Adding missing column: {col}")
+                db.session.execute(text(
+                    f'ALTER TABLE configs ADD COLUMN {col} {col_type} DEFAULT {default}'
+                ))
+        db.session.commit()
 
 
 def create_app():

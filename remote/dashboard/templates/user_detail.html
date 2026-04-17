@@ -215,6 +215,16 @@
                                     <input type="number" class="form-control" name="partial_tp_same_dir" id="cfg_partial_tp_same_dir" step="1">
                                 </div>
                             </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Dual Switch High <span id="ea_dual_switch_high" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="dual_switch_high" id="cfg_dual_switch_high" step="1">
+                                </div>
+                                <div class="col-md-4 config-field">
+                                    <label class="form-label">Dual Switch Low <span id="ea_dual_switch_low" class="ea-val text-body-secondary"></span></label>
+                                    <input type="number" class="form-control" name="dual_switch_low" id="cfg_dual_switch_low" step="1">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -347,6 +357,7 @@ const userId = {{ user.id }};
 const boolParams = ['enable_weekend_hedge','enforce_step_buy','enforce_step_sell','auto_enforce_step','trading_enabled'];
 const numParams = ['fixed_lot','step_pip','max_per_side','max_spread_pip','ema_fast','ema_slow',
     'cluster_tp_usd','partial_tp_usd','partial_tp_same_dir',
+    'dual_switch_high','dual_switch_low',
     'hours_before_close','max_drawdown_percent','enforce_on_pct','enforce_off_pct'];
 const selectParams = ['partial_tp_mode'];
 

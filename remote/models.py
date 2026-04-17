@@ -58,6 +58,8 @@ class Config(db.Model):
     partial_tp_mode = db.Column(db.Integer, default=0)
     partial_tp_usd = db.Column(db.Float, default=1.0)
     partial_tp_same_dir = db.Column(db.Integer, default=3)
+    dual_switch_high = db.Column(db.Integer, default=50)
+    dual_switch_low = db.Column(db.Integer, default=25)
 
     # Weekend
     enable_weekend_hedge = db.Column(db.Boolean, default=True)
@@ -80,7 +82,8 @@ class Config(db.Model):
     PARAM_NAMES = [
         'fixed_lot', 'step_pip', 'max_per_side', 'max_spread_pip',
         'ema_fast', 'ema_slow', 'cluster_tp_usd', 'partial_tp_mode',
-        'partial_tp_usd', 'partial_tp_same_dir', 'enable_weekend_hedge',
+        'partial_tp_usd', 'partial_tp_same_dir',
+        'dual_switch_high', 'dual_switch_low', 'enable_weekend_hedge',
         'hours_before_close', 'max_drawdown_percent', 'enforce_step_buy',
         'enforce_step_sell', 'auto_enforce_step', 'enforce_on_pct',
         'enforce_off_pct', 'trading_enabled',

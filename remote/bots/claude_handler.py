@@ -111,6 +111,8 @@ TOOLS = [
                 "partial_tp_mode": {"type": "integer", "description": "Che do TP tung phan (0=off, 1=on)"},
                 "partial_tp_usd": {"type": "number", "description": "TP tung phan (USD)"},
                 "partial_tp_same_dir": {"type": "integer", "description": "So lenh cung huong de kich hoat partial TP"},
+                "dual_switch_high": {"type": "integer", "description": "Dual mode: chenh lech buy/sell >= X thi chuyen CloseFar (default 50)"},
+                "dual_switch_low": {"type": "integer", "description": "Dual mode: chenh lech buy/sell <= Y thi chuyen Combo21 (default 25)"},
                 "enable_weekend_hedge": {"type": "boolean", "description": "Bat/tat hedge cuoi tuan"},
                 "hours_before_close": {"type": "integer", "description": "So gio truoc close market de hedge"},
                 "enforce_step_buy": {"type": "boolean", "description": "Enforce step cho buy"},
