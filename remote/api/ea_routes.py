@@ -8,6 +8,21 @@ from remote.api.auth import require_api_key
 ea_bp = Blueprint('ea', __name__)
 
 
+@ea_bp.route('/api/ea/log', methods=['POST'])
+@require_api_key
+def ea_log(user):
+    """EA sends important events (TP, errors, hedge, etc.) for tracking."""
+    data = request.get_json(silent=True) or {}
+    log = EventLog(
+        user_id=user.id,
+        event_type=data.get('type', 'unknown'),
+        detail=data.get('detail', ''),
+    )
+    db.session.add(log)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+
 @ea_bp.route('/api/ea/heartbeat', methods=['POST'])
 @require_api_key
 def heartbeat(user):

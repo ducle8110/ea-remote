@@ -368,6 +368,53 @@ def download_tool_file(user_id, file_type):
     return jsonify({'error': 'File not found'}), 404
 
 
+@admin_bp.route('/api/admin/export/<int:user_id>')
+@require_admin
+def export_csv(user_id):
+    """Export event logs as CSV for a user. Query params: start, end (YYYY-MM-DD), types."""
+    import csv
+    import io
+    from flask import Response
+
+    u = User.query.get_or_404(user_id)
+
+    query = EventLog.query.filter_by(user_id=user_id)
+
+    # Filter by date range
+    start = request.args.get('start')
+    end = request.args.get('end')
+    if start:
+        query = query.filter(EventLog.created_at >= datetime.fromisoformat(start).replace(tzinfo=timezone.utc))
+    if end:
+        end_dt = datetime.fromisoformat(end).replace(tzinfo=timezone.utc).replace(hour=23, minute=59, second=59)
+        query = query.filter(EventLog.created_at <= end_dt)
+
+    # Filter by event types (comma-separated)
+    types = request.args.get('types', '')
+    if types:
+        type_list = [t.strip() for t in types.split(',') if t.strip()]
+        query = query.filter(EventLog.event_type.in_(type_list))
+
+    logs = query.order_by(EventLog.created_at).all()
+
+    # Build CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['timestamp', 'event_type', 'detail'])
+    for log in logs:
+        writer.writerow([
+            log.created_at.isoformat() if log.created_at else '',
+            log.event_type,
+            log.detail,
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={u.name}_logs.csv'},
+    )
+
+
 @admin_bp.route('/api/admin/logs')
 @require_admin
 def get_logs():
