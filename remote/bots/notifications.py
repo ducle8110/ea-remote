@@ -35,7 +35,7 @@ def notify_telegram(user, message, level="info"):
     if not bot_token:
         return
 
-    chat_id = user.telegram_chat_id or current_app.config.get('TELEGRAM_ADMIN_CHAT_ID', '')
+    chat_id = getattr(user, 'telegram_chat_id', None) or current_app.config.get('TELEGRAM_ADMIN_CHAT_ID', '')
     if not chat_id:
         return
 
