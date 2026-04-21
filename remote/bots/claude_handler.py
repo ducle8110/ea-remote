@@ -43,7 +43,7 @@ TOOLS = [
     },
     {
         "name": "get_user_detail",
-        "description": "Lay thong tin chi tiet 1 user: config hien tai, heartbeat, trang thai online.",
+        "description": "Lay thong tin chi tiet 1 user. Tra ve 2 config: 'ea_current_config' la config THUC TE EA dang chay (uu tien dung cai nay khi tra loi), 'config' la config server mong muon. Neu 2 config khac nhau thi ghi chu cho user.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -154,6 +154,7 @@ def _find_user(name):
 def _handle_get_all_status(_input):
     from remote.models import User
     from datetime import datetime, timezone
+    import json as _json
 
     users = User.query.filter_by(is_active=True).all()
     now = datetime.now(timezone.utc)
@@ -165,6 +166,18 @@ def _handle_get_all_status(_input):
             online = delta < 60
         else:
             online = False
+
+        # Get trading_enabled from EA's actual config if available
+        trading_enabled = True
+        if hb and hb.current_config:
+            try:
+                ea_cfg = _json.loads(hb.current_config)
+                trading_enabled = ea_cfg.get('trading_enabled', True)
+            except (ValueError, TypeError):
+                trading_enabled = u.config.trading_enabled if u.config else True
+        elif u.config:
+            trading_enabled = u.config.trading_enabled
+
         result.append({
             "name": u.name,
             "online": online,
@@ -175,7 +188,7 @@ def _handle_get_all_status(_input):
             "buy_count": hb.buy_count if hb else 0,
             "sell_count": hb.sell_count if hb else 0,
             "spread_pip": hb.spread_pip if hb else 0,
-            "trading_enabled": u.config.trading_enabled if u.config else True,
+            "trading_enabled": trading_enabled,
         })
     if not result:
         return {"message": "Khong co user nao"}
