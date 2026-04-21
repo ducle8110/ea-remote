@@ -128,7 +128,7 @@ def start_discord_bot(app: Flask):
     async def cmd_clear(ctx):
         """Clear Claude AI conversation history. Usage: !clear"""
         clear_history(str(ctx.channel.id))
-        await ctx.send("Da xoa lich su hoi thoai AI.")
+        await ctx.send("Đã xóa lịch sử hội thoại AI.")
 
     @bot.event
     async def on_message(message):
@@ -152,7 +152,7 @@ def start_discord_bot(app: Flask):
         # Skip if no API key configured
         if not app.config.get('ANTHROPIC_API_KEY', ''):
             app.logger.warning("[Claude AI] ANTHROPIC_API_KEY not set, skipping")
-            await message.reply("Claude AI chua duoc cau hinh (thieu ANTHROPIC_API_KEY).")
+            await message.reply("Claude AI chưa được cấu hình (thiếu ANTHROPIC_API_KEY).")
             return
 
         # Strip bot mention from message content
@@ -176,7 +176,7 @@ def start_discord_bot(app: Flask):
                     await message.channel.send(reply[i:i + 2000])
         except Exception as e:
             app.logger.exception(f"[Claude AI] Error: {e}")
-            await message.reply(f"Loi: {e}")
+            await message.reply(f"Lỗi: {e}")
 
     def run_bot():
         import asyncio

@@ -89,7 +89,7 @@ def start_telegram_bot(app: Flask):
     async def cmd_clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Clear Claude AI conversation history."""
         clear_history(str(update.effective_chat.id))
-        await update.message.reply_text("Da xoa lich su hoi thoai AI.")
+        await update.message.reply_text("Đã xóa lịch sử hội thoại AI.")
 
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle non-command text messages via Claude AI."""
@@ -128,7 +128,7 @@ def start_telegram_bot(app: Flask):
                 await update.message.reply_text(reply[i:i + 4096])
         except Exception as e:
             app.logger.exception(f"[Claude AI TG] Error: {e}")
-            await update.message.reply_text(f"Loi: {e}")
+            await update.message.reply_text(f"Lỗi: {e}")
 
     def run_bot():
         import asyncio

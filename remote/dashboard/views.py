@@ -15,7 +15,7 @@ def login():
         if username == AppConfig.ADMIN_USERNAME and password == AppConfig.ADMIN_PASSWORD:
             session['admin_logged_in'] = True
             return redirect(url_for('dashboard.index'))
-        flash('Sai username hoac password', 'error')
+        flash('Sai username hoặc password', 'error')
     return render_template('login.html')
 
 

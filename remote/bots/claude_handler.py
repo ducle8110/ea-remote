@@ -8,15 +8,15 @@ log = logging.getLogger(__name__)
 # System prompt
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """\
-Ban la tro ly quan ly EA trading tren MT5. Ban giup admin dieu khien EA thong qua cac tool duoc cung cap.
+Bạn là trợ lý quản lý EA trading trên MT5. Bạn giúp admin điều khiển EA thông qua các tool được cung cấp.
 
-Quy tac:
-- Tra loi bang tieng Viet, ngan gon, ro rang.
-- Khi user hoi trang thai, su dung tool get_all_status hoac get_user_detail.
-- Khi user muon thay doi config (lot, step, TP, DD, ...), su dung tool update_config.
-- QUAN TRONG: Khi user muon dong tat ca lenh (close all), ban PHAI hoi xac nhan truoc. Chi goi close_all_positions voi confirmed=true khi user da noi ro "xac nhan", "confirm", "dong y", hoac "ok dong het".
-- Khi khong hieu y user, hoi lai cho ro.
-- Khong tu y thuc hien hanh dong nguy hiem ma khong co xac nhan.
+Quy tắc:
+- Trả lời bằng tiếng Việt, ngắn gọn, rõ ràng.
+- Khi user hỏi trạng thái, sử dụng tool get_all_status hoặc get_user_detail.
+- Khi user muốn thay đổi config (lot, step, TP, DD, ...), sử dụng tool update_config.
+- QUAN TRỌNG: Khi user muốn đóng tất cả lệnh (close all), bạn PHẢI hỏi xác nhận trước. Chỉ gọi close_all_positions với confirmed=true khi user đã nói rõ "xác nhận", "confirm", "đồng ý", hoặc "ok đóng hết".
+- Khi không hiểu ý user, hỏi lại cho rõ.
+- Không tự ý thực hiện hành động nguy hiểm mà không có xác nhận.
 """
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ Quy tac:
 TOOLS = [
     {
         "name": "get_all_status",
-        "description": "Lay trang thai tat ca users/EAs: balance, equity, drawdown, so lenh buy/sell, spread, online/offline.",
+        "description": "Lấy trạng thái tất cả users/EAs: balance, equity, drawdown, số lệnh buy/sell, spread, online/offline.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -34,7 +34,7 @@ TOOLS = [
     },
     {
         "name": "list_users",
-        "description": "Liet ke tat ca users dang active voi phien ban EA.",
+        "description": "Liệt kê tất cả users đang active với phiên bản EA.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -43,33 +43,33 @@ TOOLS = [
     },
     {
         "name": "get_user_detail",
-        "description": "Lay thong tin chi tiet 1 user. Tra ve 2 config: 'ea_current_config' la config THUC TE EA dang chay (uu tien dung cai nay khi tra loi), 'config' la config server mong muon. Neu 2 config khac nhau thi ghi chu cho user.",
+        "description": "Lấy thông tin chi tiết 1 user. Trả về 2 config: 'ea_current_config' là config THỰC TẾ EA đang chạy (ưu tiên dùng cái này khi trả lời), 'config' là config server mong muốn. Nếu 2 config khác nhau thì ghi chú cho user.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_name": {"type": "string", "description": "Ten user"},
+                "user_name": {"type": "string", "description": "Tên user"},
             },
             "required": ["user_name"],
         },
     },
     {
         "name": "disable_trading",
-        "description": "Tat trading cho 1 user. EA se khong mo lenh moi.",
+        "description": "Tắt trading cho 1 user. EA sẽ không mở lệnh mới.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_name": {"type": "string", "description": "Ten user can tat trading"},
+                "user_name": {"type": "string", "description": "Tên user cần tắt trading"},
             },
             "required": ["user_name"],
         },
     },
     {
         "name": "enable_trading",
-        "description": "Bat trading cho 1 user.",
+        "description": "Bật trading cho 1 user.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_name": {"type": "string", "description": "Ten user can bat trading"},
+                "user_name": {"type": "string", "description": "Tên user cần bật trading"},
             },
             "required": ["user_name"],
         },
@@ -77,17 +77,17 @@ TOOLS = [
     {
         "name": "close_all_positions",
         "description": (
-            "Dong TAT CA lenh cua 1 user. DAY LA HANH DONG NGUY HIEM. "
-            "Ban PHAI hoi user xac nhan truoc khi goi tool nay. "
-            "Chi goi khi user da noi ro 'xac nhan', 'confirm', hoac 'dong y'."
+            "Đóng TẤT CẢ lệnh của 1 user. ĐÂY LÀ HÀNH ĐỘNG NGUY HIỂM. "
+            "Bạn PHẢI hỏi user xác nhận trước khi gọi tool này. "
+            "Chỉ gọi khi user đã nói rõ 'xác nhận', 'confirm', hoặc 'đồng ý'."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_name": {"type": "string", "description": "Ten user"},
+                "user_name": {"type": "string", "description": "Tên user"},
                 "confirmed": {
                     "type": "boolean",
-                    "description": "True neu user da xac nhan. PHAI la true moi thuc hien.",
+                    "description": "True nếu user đã xác nhận. PHẢI là true mới thực hiện.",
                 },
             },
             "required": ["user_name", "confirmed"],
@@ -95,47 +95,47 @@ TOOLS = [
     },
     {
         "name": "update_config",
-        "description": "Cap nhat config EA cho 1 user. Chi truyen cac tham so can thay doi.",
+        "description": "Cập nhật config EA cho 1 user. Chỉ truyền các tham số cần thay đổi.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_name": {"type": "string", "description": "Ten user"},
+                "user_name": {"type": "string", "description": "Tên user"},
                 "fixed_lot": {"type": "number", "description": "Lot size (VD: 0.01, 0.02)"},
-                "step_pip": {"type": "number", "description": "Khoang cach pip giua cac lenh"},
-                "max_per_side": {"type": "integer", "description": "So lenh toi da moi huong"},
-                "max_spread_pip": {"type": "number", "description": "Spread toi da (pip)"},
+                "step_pip": {"type": "number", "description": "Khoảng cách pip giữa các lệnh"},
+                "max_per_side": {"type": "integer", "description": "Số lệnh tối đa mỗi hướng"},
+                "max_spread_pip": {"type": "number", "description": "Spread tối đa (pip)"},
                 "cluster_tp_usd": {"type": "number", "description": "Take profit cluster (USD)"},
-                "max_drawdown_percent": {"type": "number", "description": "Drawdown toi da (%)"},
+                "max_drawdown_percent": {"type": "number", "description": "Drawdown tối đa (%)"},
                 "ema_fast": {"type": "integer", "description": "EMA nhanh"},
-                "ema_slow": {"type": "integer", "description": "EMA cham"},
-                "partial_tp_mode": {"type": "integer", "description": "Che do TP tung phan (0=off, 1=on)"},
-                "partial_tp_usd": {"type": "number", "description": "TP tung phan (USD)"},
-                "partial_tp_same_dir": {"type": "integer", "description": "So lenh cung huong de kich hoat partial TP"},
-                "dual_switch_high": {"type": "integer", "description": "Dual mode: chenh lech buy/sell >= X thi chuyen CloseFar (default 50)"},
-                "dual_switch_low": {"type": "integer", "description": "Dual mode: chenh lech buy/sell <= Y thi chuyen Combo21 (default 25)"},
-                "enable_weekend_hedge": {"type": "boolean", "description": "Bat/tat hedge cuoi tuan"},
-                "hours_before_close": {"type": "integer", "description": "So gio truoc close market de hedge"},
+                "ema_slow": {"type": "integer", "description": "EMA chậm"},
+                "partial_tp_mode": {"type": "integer", "description": "Chế độ TP từng phần (0=off, 1=on)"},
+                "partial_tp_usd": {"type": "number", "description": "TP từng phần (USD)"},
+                "partial_tp_same_dir": {"type": "integer", "description": "Số lệnh cùng hướng để kích hoạt partial TP"},
+                "dual_switch_high": {"type": "integer", "description": "Dual mode: chênh lệch buy/sell >= X thì chuyển CloseFar (default 50)"},
+                "dual_switch_low": {"type": "integer", "description": "Dual mode: chênh lệch buy/sell <= Y thì chuyển Combo21 (default 25)"},
+                "enable_weekend_hedge": {"type": "boolean", "description": "Bật/tắt hedge cuối tuần"},
+                "hours_before_close": {"type": "integer", "description": "Số giờ trước close market để hedge"},
                 "enforce_step_buy": {"type": "boolean", "description": "Enforce step cho buy"},
                 "enforce_step_sell": {"type": "boolean", "description": "Enforce step cho sell"},
-                "auto_enforce_step": {"type": "boolean", "description": "Tu dong enforce step khi DD cao"},
-                "enforce_on_pct": {"type": "integer", "description": "DD % de bat enforce step"},
-                "enforce_off_pct": {"type": "integer", "description": "DD % de tat enforce step"},
+                "auto_enforce_step": {"type": "boolean", "description": "Tự động enforce step khi DD cao"},
+                "enforce_on_pct": {"type": "integer", "description": "DD % để bật enforce step"},
+                "enforce_off_pct": {"type": "integer", "description": "DD % để tắt enforce step"},
             },
             "required": ["user_name"],
         },
     },
     {
         "name": "get_logs",
-        "description": "Lay lich su event logs. Co the loc theo user va loai event.",
+        "description": "Lấy lịch sử event logs. Có thể lọc theo user và loại event.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_name": {"type": "string", "description": "Ten user (tuy chon)"},
+                "user_name": {"type": "string", "description": "Tên user (tùy chọn)"},
                 "event_type": {
                     "type": "string",
-                    "description": "Loai event: config_change, disable_trading, enable_trading, close_all, alert_offline, alert_drawdown",
+                    "description": "Loại event: config_change, disable_trading, enable_trading, close_all, alert_offline, alert_drawdown",
                 },
-                "limit": {"type": "integer", "description": "So log toi da (mac dinh 10)"},
+                "limit": {"type": "integer", "description": "Số log tối đa (mặc định 10)"},
             },
             "required": [],
         },
@@ -191,7 +191,7 @@ def _handle_get_all_status(_input):
             "trading_enabled": trading_enabled,
         })
     if not result:
-        return {"message": "Khong co user nao"}
+        return {"message": "Không có user nào"}
     return {"users": result}
 
 
@@ -199,7 +199,7 @@ def _handle_list_users(_input):
     from remote.models import User
     users = User.query.filter_by(is_active=True).all()
     if not users:
-        return {"message": "Khong co user nao"}
+        return {"message": "Không có user nào"}
     return {"users": [{"name": u.name, "ea_version": u.ea_version or "?"} for u in users]}
 
 
@@ -210,7 +210,7 @@ def _handle_get_user_detail(inp):
 
     user = _find_user(inp["user_name"])
     if not user:
-        return {"error": f"Khong tim thay user '{inp['user_name']}'"}
+        return {"error": f"Không tìm thấy user '{inp['user_name']}'"}
 
     hb = user.heartbeat
     online = False
@@ -253,7 +253,7 @@ def _handle_disable_trading(inp):
 
     user = _find_user(inp["user_name"])
     if not user:
-        return {"error": f"Khong tim thay user '{inp['user_name']}'"}
+        return {"error": f"Không tìm thấy user '{inp['user_name']}'"}
 
     if user.config:
         user.config.trading_enabled = False
@@ -274,7 +274,7 @@ def _handle_disable_trading(inp):
         detail='Triggered via Discord AI chat',
     ))
     db.session.commit()
-    return {"success": True, "message": f"Da tat trading cho {user.name}"}
+    return {"success": True, "message": f"Đã tắt trading cho {user.name}"}
 
 
 def _handle_enable_trading(inp):
@@ -283,7 +283,7 @@ def _handle_enable_trading(inp):
 
     user = _find_user(inp["user_name"])
     if not user:
-        return {"error": f"Khong tim thay user '{inp['user_name']}'"}
+        return {"error": f"Không tìm thấy user '{inp['user_name']}'"}
 
     if user.config:
         user.config.trading_enabled = True
@@ -304,7 +304,7 @@ def _handle_enable_trading(inp):
         detail='Triggered via Discord AI chat',
     ))
     db.session.commit()
-    return {"success": True, "message": f"Da bat trading cho {user.name}"}
+    return {"success": True, "message": f"Đã bật trading cho {user.name}"}
 
 
 def _handle_close_all(inp):
@@ -312,10 +312,10 @@ def _handle_close_all(inp):
 
     user = _find_user(inp["user_name"])
     if not user:
-        return {"error": f"Khong tim thay user '{inp['user_name']}'"}
+        return {"error": f"Không tìm thấy user '{inp['user_name']}'"}
 
     if not inp.get("confirmed"):
-        return {"error": "Chua xac nhan. Hay hoi user xac nhan truoc khi dong lenh."}
+        return {"error": "Chưa xác nhận. Hãy hỏi user xác nhận trước khi đóng lệnh."}
 
     cmd = Command(user_id=user.id, cmd_type='close_all', payload='{}')
     db.session.add(cmd)
@@ -325,7 +325,7 @@ def _handle_close_all(inp):
         detail='Triggered via Discord AI chat',
     ))
     db.session.commit()
-    return {"success": True, "message": f"Da gui lenh CLOSE ALL cho {user.name}"}
+    return {"success": True, "message": f"Đã gửi lệnh CLOSE ALL cho {user.name}"}
 
 
 def _handle_update_config(inp):
@@ -333,7 +333,7 @@ def _handle_update_config(inp):
 
     user = _find_user(inp["user_name"])
     if not user:
-        return {"error": f"Khong tim thay user '{inp['user_name']}'"}
+        return {"error": f"Không tìm thấy user '{inp['user_name']}'"}
 
     config = user.config
     if not config:
@@ -350,7 +350,7 @@ def _handle_update_config(inp):
                 changed[key] = {"old": old_val, "new": new_val}
 
     if not changed:
-        return {"message": "Khong co gi thay doi"}
+        return {"message": "Không có gì thay đổi"}
 
     cmd = Command(
         user_id=user.id,
@@ -374,7 +374,7 @@ def _handle_get_logs(inp):
     if inp.get("user_name"):
         user = _find_user(inp["user_name"])
         if not user:
-            return {"error": f"Khong tim thay user '{inp['user_name']}'"}
+            return {"error": f"Không tìm thấy user '{inp['user_name']}'"}
         query = query.filter_by(user_id=user.id)
     if inp.get("event_type"):
         query = query.filter_by(event_type=inp["event_type"])
@@ -432,7 +432,7 @@ def process_message(app, user_message, channel_id):
 
     api_key = app.config.get('ANTHROPIC_API_KEY', '')
     if not api_key:
-        return "Claude AI chua duoc cau hinh (thieu ANTHROPIC_API_KEY)."
+        return "Claude AI chưa được cấu hình (thiếu ANTHROPIC_API_KEY)."
 
     model = app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
     max_history = app.config.get('CLAUDE_MAX_HISTORY', 20)
@@ -467,7 +467,7 @@ def process_message(app, user_message, channel_id):
                 # No tools — extract text and return
                 text = "".join(b.text for b in response.content if b.type == "text")
                 history.append({"role": "assistant", "content": text})
-                return text or "(Khong co phan hoi)"
+                return text or "(Không có phản hồi)"
 
             # Execute tools and feed results back
             # Store raw content for the API (needs ContentBlock objects serialized)
@@ -489,12 +489,12 @@ def process_message(app, user_message, channel_id):
 
         # Loop exhausted — grab last text if any
         text = "".join(b.text for b in response.content if b.type == "text")
-        history.append({"role": "assistant", "content": text or "Xin loi, khong the xu ly yeu cau nay."})
+        history.append({"role": "assistant", "content": text or "Xin lỗi, không thể xử lý yêu cầu này."})
         return history[-1]["content"]
 
     except Exception as e:
         log.exception("Claude handler error")
-        return f"Loi khi goi Claude API: {e}"
+        return f"Lỗi khi gọi Claude API: {e}"
 
 
 def clear_history(channel_id):
