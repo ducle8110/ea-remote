@@ -206,6 +206,15 @@ def _handle_get_user_detail(inp):
         online = delta < 60
 
     config_dict = user.config.to_dict() if user.config else {}
+
+    # Parse current_config from heartbeat (actual config EA is running)
+    ea_config = {}
+    if hb and hb.current_config:
+        try:
+            ea_config = _json.loads(hb.current_config)
+        except (ValueError, TypeError):
+            pass
+
     return {
         "name": user.name,
         "account_number": user.account_number,
@@ -221,6 +230,7 @@ def _handle_get_user_detail(inp):
         "spread_pip": hb.spread_pip if hb else 0,
         "hedge_active": hb.hedge_active if hb else False,
         "config": config_dict,
+        "ea_current_config": ea_config,
     }
 
 
