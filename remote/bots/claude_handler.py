@@ -111,6 +111,7 @@ TOOLS = [
                 "partial_tp_mode": {"type": "integer", "description": "Chế độ TP từng phần (0=off, 1=on)"},
                 "partial_tp_usd": {"type": "number", "description": "TP từng phần (USD)"},
                 "partial_tp_same_dir": {"type": "integer", "description": "Số lệnh cùng hướng để kích hoạt partial TP"},
+                "partial_tp_close_pct": {"type": "integer", "description": "% volume cắt mỗi lần gặm lot CloseFar (0=tự động)"},
                 "dual_switch_high": {"type": "integer", "description": "Dual mode: chênh lệch buy/sell >= X thì chuyển CloseFar (default 50)"},
                 "dual_switch_low": {"type": "integer", "description": "Dual mode: chênh lệch buy/sell <= Y thì chuyển Combo21 (default 25)"},
                 "enable_weekend_hedge": {"type": "boolean", "description": "Bật/tắt hedge cuối tuần"},
