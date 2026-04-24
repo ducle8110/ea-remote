@@ -25,8 +25,8 @@ class User(db.Model):
 
     # Uploaded tool files
     tool_filename = db.Column(db.String(200), default='')   # VD: v91_PartialTP
-    tool_mq5 = db.Column(db.LargeBinary, nullable=True)     # MQ5 source file
-    tool_ex5 = db.Column(db.LargeBinary, nullable=True)     # EX5 compiled file
+    tool_mq5 = db.deferred(db.Column(db.LargeBinary, nullable=True))     # MQ5 source file
+    tool_ex5 = db.deferred(db.Column(db.LargeBinary, nullable=True))     # EX5 compiled file
 
     config = db.relationship('Config', backref='user', uselist=False,
                              cascade='all, delete-orphan')

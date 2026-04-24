@@ -82,9 +82,14 @@ def heartbeat(user):
         c.acknowledged = True
         c.ack_at = now
 
-    # Include desired config if it differs from EA's current
+    # Only send config if it changed since last heartbeat
     config = Config.query.filter_by(user_id=user.id).first()
-    desired_config = config.to_dict() if config else {}
+    desired_config = None
+    if config and config.updated_at and hb.last_seen:
+        if config.updated_at > hb.last_seen:
+            desired_config = config.to_dict()
+    elif config:
+        desired_config = config.to_dict()
 
     db.session.commit()
 

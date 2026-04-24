@@ -29,8 +29,7 @@ def logout():
 @require_admin
 def index():
     """Main dashboard - all users overview."""
-    users = User.query.filter_by(is_active=True).all()
-    return render_template('dashboard.html', users=users)
+    return render_template('dashboard.html', users=[])
 
 
 @dashboard_bp.route('/user/<int:user_id>')

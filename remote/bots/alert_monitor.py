@@ -14,7 +14,7 @@ def start_alert_monitor(app: Flask):
 
     def monitor_loop():
         while True:
-            time.sleep(15)
+            time.sleep(60)
             try:
                 with app.app_context():
                     from remote.models import db, User, EventLog
@@ -71,4 +71,4 @@ def start_alert_monitor(app: Flask):
 
     thread = threading.Thread(target=monitor_loop, daemon=True)
     thread.start()
-    app.logger.info("Alert monitor started (checking every 15s)")
+    app.logger.info("Alert monitor started (checking every 60s)")
