@@ -23,6 +23,9 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
     note = db.Column(db.Text, default='')
 
+    # Copy-trade master HMAC secret (32-byte hex). Null until admin enable copy-trade cho user này.
+    hmac_secret = db.Column(db.String(64), nullable=True)
+
     # Uploaded tool files
     tool_filename = db.Column(db.String(200), default='')   # VD: v91_PartialTP
     tool_mq5 = db.deferred(db.Column(db.LargeBinary, nullable=True))     # MQ5 source file
@@ -139,3 +142,77 @@ class EventLog(db.Model):
     event_type = db.Column(db.String(50), nullable=False)
     detail = db.Column(db.Text, default='')
     created_at = db.Column(db.DateTime, default=utcnow)
+
+
+# ============================================================================
+# Copy-trade models (master broadcasts events → slaves poll & copy)
+# ============================================================================
+
+class Slave(db.Model):
+    """Slave account đăng ký theo dõi 1 master để copy trade.
+
+    Mỗi slave có token riêng (identity) + hmac_secret riêng (ký request).
+    Admin tạo trong dashboard, hiển thị token + secret 1 lần duy nhất khi tạo.
+    """
+    __tablename__ = 'slaves'
+
+    id = db.Column(db.Integer, primary_key=True)
+    master_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                               nullable=False, index=True)
+    name = db.Column(db.String(64), nullable=False)              # human-readable (vd "Slave demo 1")
+
+    # Auth — token là identity (gửi qua header X-Slave-Token), hmac_secret là key ký request
+    token = db.Column(db.String(64), unique=True, index=True, nullable=False)
+    hmac_secret = db.Column(db.String(64), nullable=False)
+
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    last_seen = db.Column(db.DateTime, nullable=True)            # cập nhật mỗi /pull
+
+    # Scale config (EA đọc qua GET /api/copytrade/slave_config nếu cần — phase sau)
+    lot_mode = db.Column(db.String(32), default='LOT_BALANCE_RATIO')
+    lot_multiplier = db.Column(db.Float, default=1.0)
+    fixed_lot = db.Column(db.Float, default=0.01)
+    risk_multiplier = db.Column(db.Float, default=1.0)
+    min_lot = db.Column(db.Float, default=0.01)
+    max_lot = db.Column(db.Float, default=10.0)
+    allowed_symbols = db.Column(db.String(256), default='XAUUSD')
+
+    master = db.relationship('User', backref=db.backref('slaves', lazy='dynamic',
+                                                        cascade='all, delete-orphan'))
+
+
+class MasterState(db.Model):
+    """Snapshot balance/equity gần nhất của master, upsert qua POST /master_state.
+
+    Slave dùng để tính lot ratio (slave_lot = master_lot * slave_bal/master_bal).
+    """
+    __tablename__ = 'master_states'
+
+    master_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                               primary_key=True)
+    balance = db.Column(db.Float, nullable=False)
+    equity = db.Column(db.Float, nullable=False)
+    ts = db.Column(db.BigInteger, nullable=False)                # unix epoch (master TimeGMT)
+
+    master = db.relationship('User', backref=db.backref('master_state', uselist=False,
+                                                        cascade='all, delete-orphan'))
+
+
+class TradeEvent(db.Model):
+    """Event stream từ master (open/close/modify). Append-only, retention 7 ngày.
+
+    Slave poll GET /pull?since=N để nhận event id > N theo thứ tự autoincrement.
+    """
+    __tablename__ = 'trade_events'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    master_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                               nullable=False, index=True)
+    ts = db.Column(db.BigInteger, nullable=False, index=True)    # unix epoch
+    type = db.Column(db.String(16), nullable=False)              # open/close/modify
+    payload = db.Column(db.Text, nullable=False)                 # JSON raw từ master push
+
+    __table_args__ = (
+        db.Index('idx_trade_events_master_id', 'master_user_id', 'id'),
+    )

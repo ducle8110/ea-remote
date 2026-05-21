@@ -1,0 +1,32 @@
+# Cloudflare Tunnel — NAMED TUNNEL (URL cố định, cần domain Cloudflare).
+#
+# QUICK TUNNEL không cần file này — chạy thẳng `cloudflared tunnel --url http://localhost:5000`.
+# Nhược điểm quick: URL random *.trycloudflare.com đổi mỗi restart.
+#
+# Để dùng NAMED TUNNEL:
+#   1. Đăng nhập Cloudflare: cloudflared tunnel login
+#   2. Tạo tunnel:           cloudflared tunnel create ea-remote
+#   3. Note UUID in ra:      vd `abc12345-...-...`
+#   4. Copy credentials:     copy %USERPROFILE%\.cloudflared\<UUID>.json C:\path\to\.cloudflared\
+#   5. Edit file này:        thay <UUID> và <DOMAIN>
+#   6. Save thành config.yml ở `%USERPROFILE%\.cloudflared\config.yml` hoặc đường dẫn rõ ràng
+#   7. Tạo DNS route:        cloudflared tunnel route dns ea-remote ea-remote.<DOMAIN>
+#   8. Sửa install-windows.bat: uncomment dòng named-mode (xem comment trong file)
+#   9. Re-install service:   chạy lại install-windows.bat
+
+tunnel: <UUID-cua-tunnel>
+credentials-file: C:\Users\<user>\.cloudflared\<UUID>.json
+
+# Disable WARP routing (chỉ cần ingress HTTPS)
+warp-routing:
+  enabled: false
+
+# Ingress rules — gọi tới hostname public, forward về Flask local
+ingress:
+  - hostname: ea-remote.<DOMAIN>
+    service: http://127.0.0.1:5000
+    originRequest:
+      connectTimeout: 10s
+      noTLSVerify: true
+  # Catch-all (bắt buộc cuối)
+  - service: http_status:404

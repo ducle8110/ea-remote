@@ -1,10 +1,12 @@
 """Admin API endpoints for dashboard AJAX calls."""
 import json
+import secrets
 import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
-from remote.models import db, User, Config, Command, Heartbeat, EventLog
+from remote.models import db, User, Config, Command, Heartbeat, EventLog, Slave
 from remote.api.auth import require_admin
+from remote.auth_hmac import flush_token
 
 admin_bp = Blueprint('admin_api', __name__)
 
@@ -413,6 +415,179 @@ def export_csv(user_id):
         mimetype='text/csv',
         headers={'Content-Disposition': f'attachment; filename={u.name}_logs.csv'},
     )
+
+
+# ============================================================================
+# Copy-trade slave/master management
+# ============================================================================
+
+@admin_bp.route('/api/admin/user/<int:user_id>/enable_copytrade', methods=['POST'])
+@require_admin
+def enable_copytrade(user_id):
+    """Gen hmac_secret cho User (enable master mode).
+
+    Trả secret 1 LẦN duy nhất — admin phải lưu paste vào input SharedSecret
+    của CopyMaster EA. Re-call sẽ rotate secret (và flush cache).
+    """
+    u = User.query.get_or_404(user_id)
+    is_rotate = u.hmac_secret is not None
+    new_secret = secrets.token_hex(32)
+    u.hmac_secret = new_secret
+    flush_token(u.api_key)  # invalidate cache để request kế re-validate
+    db.session.add(EventLog(
+        user_id=u.id,
+        event_type='copytrade_secret_rotated' if is_rotate else 'copytrade_enabled',
+        detail=f'hmac_secret {"rotated" if is_rotate else "generated"} cho master "{u.name}"',
+    ))
+    db.session.commit()
+    return jsonify({
+        'status': 'ok',
+        'master_token': u.api_key,
+        'hmac_secret': new_secret,
+        'warning': 'Lưu secret NGAY — không hiển thị lại lần sau!',
+    })
+
+
+@admin_bp.route('/api/admin/user/<int:user_id>/slave', methods=['POST'])
+@require_admin
+def create_slave(user_id):
+    """Create slave entity cho master. Trả token + hmac_secret 1 LẦN."""
+    master = User.query.get_or_404(user_id)
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Slave name is required'}), 400
+
+    slave_token = secrets.token_hex(32)
+    slave_secret = secrets.token_hex(32)
+    slave = Slave(
+        master_user_id=master.id,
+        name=name,
+        token=slave_token,
+        hmac_secret=slave_secret,
+        lot_mode=data.get('lot_mode', 'LOT_BALANCE_RATIO'),
+        lot_multiplier=float(data.get('lot_multiplier', 1.0)),
+        fixed_lot=float(data.get('fixed_lot', 0.01)),
+        risk_multiplier=float(data.get('risk_multiplier', 1.0)),
+        min_lot=float(data.get('min_lot', 0.01)),
+        max_lot=float(data.get('max_lot', 10.0)),
+        allowed_symbols=data.get('allowed_symbols', 'XAUUSD'),
+    )
+    db.session.add(slave)
+    db.session.add(EventLog(
+        user_id=master.id,
+        event_type='slave_created',
+        detail=f'Slave "{name}" created for master "{master.name}"',
+    ))
+    db.session.commit()
+    return jsonify({
+        'status': 'ok',
+        'id': slave.id,
+        'token': slave_token,
+        'hmac_secret': slave_secret,
+        'warning': 'Lưu cả token và secret NGAY — không hiển thị lại!',
+    }), 201
+
+
+@admin_bp.route('/api/admin/user/<int:user_id>/slaves')
+@require_admin
+def list_slaves_for_master(user_id):
+    """List slaves của 1 master."""
+    User.query.get_or_404(user_id)
+    slaves = Slave.query.filter_by(master_user_id=user_id)\
+        .order_by(Slave.created_at.desc()).all()
+    return jsonify([{
+        'id': s.id,
+        'name': s.name,
+        'is_active': s.is_active,
+        'created_at': s.created_at.isoformat() if s.created_at else None,
+        'last_seen': s.last_seen.isoformat() if s.last_seen else None,
+        'lot_mode': s.lot_mode,
+        'lot_multiplier': s.lot_multiplier,
+        'fixed_lot': s.fixed_lot,
+        'risk_multiplier': s.risk_multiplier,
+        'min_lot': s.min_lot,
+        'max_lot': s.max_lot,
+        'allowed_symbols': s.allowed_symbols,
+    } for s in slaves])
+
+
+@admin_bp.route('/api/admin/slave/<int:slave_id>')
+@require_admin
+def get_slave(slave_id):
+    """Slave detail (KHÔNG show token/secret — chỉ hiển thị lúc tạo)."""
+    s = Slave.query.get_or_404(slave_id)
+    return jsonify({
+        'id': s.id,
+        'master_user_id': s.master_user_id,
+        'name': s.name,
+        'is_active': s.is_active,
+        'created_at': s.created_at.isoformat() if s.created_at else None,
+        'last_seen': s.last_seen.isoformat() if s.last_seen else None,
+        'lot_mode': s.lot_mode,
+        'lot_multiplier': s.lot_multiplier,
+        'fixed_lot': s.fixed_lot,
+        'risk_multiplier': s.risk_multiplier,
+        'min_lot': s.min_lot,
+        'max_lot': s.max_lot,
+        'allowed_symbols': s.allowed_symbols,
+    })
+
+
+@admin_bp.route('/api/admin/slave/<int:slave_id>', methods=['PUT'])
+@require_admin
+def update_slave(slave_id):
+    """Update slave name + scale config."""
+    s = Slave.query.get_or_404(slave_id)
+    data = request.get_json(silent=True) or {}
+    for key in ('name', 'lot_mode', 'lot_multiplier', 'fixed_lot',
+                'risk_multiplier', 'min_lot', 'max_lot', 'allowed_symbols'):
+        if key in data:
+            setattr(s, key, data[key])
+    db.session.add(EventLog(
+        user_id=s.master_user_id,
+        event_type='slave_updated',
+        detail=f'Slave "{s.name}" config updated',
+    ))
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+
+@admin_bp.route('/api/admin/slave/<int:slave_id>', methods=['DELETE'])
+@require_admin
+def revoke_slave(slave_id):
+    """Revoke slave (is_active=false) + flush cache → request kế 401 ngay."""
+    s = Slave.query.get_or_404(slave_id)
+    s.is_active = False
+    flush_token(s.token)
+    db.session.add(EventLog(
+        user_id=s.master_user_id,
+        event_type='slave_revoked',
+        detail=f'Slave "{s.name}" revoked',
+    ))
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+
+@admin_bp.route('/api/admin/slave/<int:slave_id>/rotate_secret', methods=['POST'])
+@require_admin
+def rotate_slave_secret(slave_id):
+    """Rotate hmac_secret. Token GIỮ NGUYÊN, secret đổi. Slave EA phải update SharedSecret."""
+    s = Slave.query.get_or_404(slave_id)
+    new_secret = secrets.token_hex(32)
+    s.hmac_secret = new_secret
+    flush_token(s.token)
+    db.session.add(EventLog(
+        user_id=s.master_user_id,
+        event_type='slave_secret_rotated',
+        detail=f'Slave "{s.name}" hmac_secret rotated',
+    ))
+    db.session.commit()
+    return jsonify({
+        'status': 'ok',
+        'hmac_secret': new_secret,
+        'warning': 'Lưu NGAY — không hiển thị lại!',
+    })
 
 
 @admin_bp.route('/api/admin/logs')

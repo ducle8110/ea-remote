@@ -2,6 +2,7 @@ flask>=3.0
 flask-sqlalchemy>=3.1
 psycopg2-binary>=2.9
 gunicorn>=21.2
+waitress>=3.0      # WSGI server for Windows VPS self-host (gunicorn không chạy Windows)
 requests>=2.31
 python-telegram-bot>=20.7
 discord.py>=2.3

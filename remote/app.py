@@ -5,10 +5,16 @@ from remote.models import db
 
 
 def _migrate_if_needed(app):
-    """Add missing columns to configs table if schema is outdated."""
+    """Add missing columns to existing tables.
+
+    db.create_all() handles CREATE TABLE for new tables (slaves, master_states,
+    trade_events) but does NOT alter existing tables. Add new columns explicitly here.
+    """
     from sqlalchemy import inspect, text
     from remote.models import Config
     inspector = inspect(db.engine)
+
+    # --- configs table (existing migration) ---
     if 'configs' in inspector.get_table_names():
         columns = {c['name'] for c in inspector.get_columns('configs')}
         # Current model expects 'fixed_lot' column; if missing, schema is wrong
@@ -30,6 +36,16 @@ def _migrate_if_needed(app):
                 ))
         db.session.commit()
 
+    # --- users table: thêm hmac_secret cho copy-trade master ---
+    if 'users' in inspector.get_table_names():
+        user_cols = {c['name'] for c in inspector.get_columns('users')}
+        if 'hmac_secret' not in user_cols:
+            app.logger.info("Adding missing column: users.hmac_secret")
+            db.session.execute(text(
+                'ALTER TABLE users ADD COLUMN hmac_secret VARCHAR(64)'
+            ))
+            db.session.commit()
+
 
 def create_app():
     app = Flask(__name__,
@@ -47,10 +63,12 @@ def create_app():
     # Register blueprints
     from remote.api.ea_routes import ea_bp
     from remote.api.admin_routes import admin_bp
+    from remote.api.copytrade_routes import copytrade_bp
     from remote.dashboard.views import dashboard_bp
 
     app.register_blueprint(ea_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(copytrade_bp)
     app.register_blueprint(dashboard_bp)
 
     # Create/migrate tables
@@ -63,6 +81,9 @@ def create_app():
     if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         from remote.bots.alert_monitor import start_alert_monitor
         start_alert_monitor(app)
+
+        from remote.bots.retention_loop import start_retention_loop
+        start_retention_loop(app)
 
         from remote.bots.telegram_bot import start_telegram_bot
         start_telegram_bot(app)

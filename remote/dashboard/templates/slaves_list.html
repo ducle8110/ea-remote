@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Slaves of {{ user.name }} - EA Remote Control{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="h5 mb-1">Slaves của master: <span class="text-primary">{{ user.name }}</span></h2>
+        <small class="text-secondary">
+            <a href="{{ url_for('dashboard.user_detail', user_id=user.id) }}">&larr; Back to master detail</a>
+        </small>
+    </div>
+    <div>
+        <a href="{{ url_for('dashboard.slave_new', user_id=user.id) }}" class="btn btn-primary">+ Add slave</a>
+    </div>
+</div>
+
+{# Master copy-trade enable section #}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Master HMAC secret:</strong>
+                {% if user.hmac_secret %}
+                    <span class="badge bg-success ms-2">Enabled</span>
+                    <small class="text-secondary ms-2">(64-char hex stored)</small>
+                {% else %}
+                    <span class="badge bg-warning ms-2">Not enabled</span>
+                    <small class="text-secondary ms-2">CopyMaster EA cần secret này để push event</small>
+                {% endif %}
+            </div>
+            <button id="btnEnable" class="btn btn-{% if user.hmac_secret %}outline-warning{% else %}success{% endif %}">
+                {% if user.hmac_secret %}Rotate secret{% else %}Enable copy-trade for this master{% endif %}
+            </button>
+        </div>
+        <div id="secretReveal" class="mt-3 d-none">
+            <div class="alert alert-warning mb-2">
+                <strong>⚠ Lưu các giá trị này NGAY — không hiển thị lại!</strong>
+            </div>
+            <div class="mb-2">
+                <label class="form-label small text-secondary mb-1">Master Token (paste vào input <code>MasterToken</code> của CopyMaster EA):</label>
+                <code id="revealToken" class="d-block p-2 bg-body-tertiary rounded user-select-all text-break"></code>
+            </div>
+            <div>
+                <label class="form-label small text-secondary mb-1">HMAC Secret (paste vào input <code>SharedSecret</code> của CopyMaster EA):</label>
+                <code id="revealSecret" class="d-block p-2 bg-body-tertiary rounded user-select-all text-break"></code>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Slaves table #}
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Lot mode</th>
+                    <th>Symbols</th>
+                    <th>Status</th>
+                    <th>Last seen</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in slaves %}
+                <tr>
+                    <td>{{ s.id }}</td>
+                    <td>{{ s.name }}</td>
+                    <td><small>{{ s.lot_mode }}</small></td>
+                    <td><small>{{ s.allowed_symbols }}</small></td>
+                    <td>
+                        {% if s.is_active %}
+                            <span class="badge bg-success">active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">revoked</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ s.last_seen.strftime('%Y-%m-%d %H:%M') if s.last_seen else '-' }}</small></td>
+                    <td><small>{{ s.created_at.strftime('%Y-%m-%d') if s.created_at else '-' }}</small></td>
+                    <td>
+                        <a href="{{ url_for('dashboard.slave_detail', slave_id=s.id) }}" class="btn btn-sm btn-outline-primary">Detail</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-secondary py-4">No slaves yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const masterId = {{ user.id }};
+const hasSecret = {{ 'true' if user.hmac_secret else 'false' }};
+
+document.getElementById('btnEnable').addEventListener('click', async () => {
+    if (hasSecret) {
+        const ok = await showConfirm(
+            'Rotate master secret',
+            'Sau khi rotate, CopyMaster EA hiện đang chạy sẽ FAIL HMAC cho đến khi update SharedSecret. Tiếp tục?'
+        );
+        if (!ok) return;
+    }
+    const res = await fetch(`/api/admin/user/${masterId}/enable_copytrade`, {method: 'POST'});
+    const d = await res.json();
+    if (d.status === 'ok') {
+        document.getElementById('revealToken').textContent = d.master_token;
+        document.getElementById('revealSecret').textContent = d.hmac_secret;
+        document.getElementById('secretReveal').classList.remove('d-none');
+        showToast(hasSecret ? 'Secret rotated' : 'Copy-trade enabled', 'success');
+    } else {
+        showToast(d.error || 'Failed', 'danger');
+    }
+});
+</script>
+{% endblock %}
